@@ -1,6 +1,6 @@
 -- ==============================================================================
--- CollegeConnect - Database Schema Definition (Phase 2 DDL)
--- Target RDBMS: MySQL 8.0+ / MariaDB 10.5+
+-- CollegeConnect - Database Schema Definition
+-- Target RDBMS: MySQL 8.4
 -- Storage Engine: InnoDB | Character Set: utf8mb4 | Collation: utf8mb4_unicode_ci
 -- Normalized Architecture: 3NF / Tall (Unpivoted) Fact Table
 -- Reference Specification: DATABASE_SCHEMA.md
@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS historical_admissions (
         ON UPDATE CASCADE
         ON DELETE RESTRICT,
 
-    -- Multi-Column Composite B-Tree Indexes for Sub-50ms Candidate Filtering & Search:
+    -- Multi-column composite B-Tree indexes for common candidate filtering and search:
     -- 1. Cutoff-Based Opportunity Search (Matching candidates with Cutoff >= Past Cutoff)
     INDEX idx_comm_quota_year_cutoff (community, quota, year, cutoff_mark),
 

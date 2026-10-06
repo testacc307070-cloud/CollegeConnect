@@ -2497,6 +2497,7 @@ def branch_swap():
 def register_all_blueprints(application):
     blueprints_to_register = [
         ("backend.rank_routes", "rank_bp"),
+        ("backend.historical_routes", "historical_bp"),
         ("backend.matrix_routes", "matrix_bp"),
         ("backend.rag_routes", "rag_bp"),
         ("backend.rank_rag_routes", "rank_rag_bp"),

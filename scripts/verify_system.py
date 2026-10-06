@@ -215,27 +215,32 @@ def verify_frontend_assets(reporter: TestReporter):
     print("\n--- 5. FRONTEND STATIC ASSETS & JAVASCRIPT ---")
     client = app.test_client()
 
+    # TNEA Historical Records Explorer API
+    r_hist = client.get("/api/historical-records?year=2021&year=2023&metric=cutoff&community=BC&page=1&page_size=5")
+    d_hist = r_hist.get_json() or {}
+    reporter.check("TNEA Historical Records API", r_hist.status_code == 200 and d_hist.get("status") == "ok" and (d_hist.get("total_count") or 0) > 0, f"({d_hist.get('total_count')} offerings matched)")
+
     # Index page
     r = client.get("/")
     content = r.data.decode("utf-8")
     has_trend_modal = "trendModal" in content
     has_branch_swap_modal = "branchSwapModal" in content
     has_calc_widget = "calc-widget" in content
-    has_quota_select = "counselingQuota" in content
+    has_method_toggle = "predictionMethod" in content
     has_tier_select = "tierFilter" in content
-    has_matrix_college = "matrixCollege" in content
-    reporter.check("Index.html Modal & Widget Markup", r.status_code == 200 and all([has_trend_modal, has_branch_swap_modal, has_calc_widget, has_quota_select, has_tier_select, has_matrix_college]), "(All 6 UI widgets present)")
+    has_historical_tab = "historicalTab" in content
+    reporter.check("Index.html Modal & Widget Markup", r.status_code == 200 and all([has_trend_modal, has_branch_swap_modal, has_calc_widget, has_method_toggle, has_tier_select, has_historical_tab]), "(All UI widgets & tabs present)")
 
     # Stylesheet
     r = client.get("/assets/styles.css")
     styles = r.data.decode("utf-8")
-    has_modal_css = "modal-overlay" in styles and "tier-inst-badge" in styles and "quota-advisory" in styles
-    reporter.check("Styles.css Modals & Badges", r.status_code == 200 and has_modal_css, "(Modal, tier badge & quota advisory CSS verified)")
+    has_modal_css = "modal-overlay" in styles and "tier-inst-badge" in styles and "historical-grouped-table" in styles
+    reporter.check("Styles.css Modals & Badges", r.status_code == 200 and has_modal_css, "(Modal, tier badge & historical table CSS verified)")
 
     # App.js static serving & syntax
     r = client.get("/assets/app.js")
     js_content = r.data.decode("utf-8")
-    has_modal_js = "openTrendModal" in js_content and "openBranchSwapModal" in js_content and "counselingQuota" in js_content
+    has_modal_js = "openTrendModal" in js_content and "openBranchSwapModal" in js_content and "searchHistoricalRecords" in js_content
     reporter.check("App.js Controllers Served", r.status_code == 200 and has_modal_js, "(Controllers verified)")
 
     # Node JS syntax check

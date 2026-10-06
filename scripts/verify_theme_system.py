@@ -83,7 +83,7 @@ def verify_theme_system():
         ("Quota Advisory Banner", 'html[data-theme="light"] .quota-advisory'),
         ("Choice Optimizer Cards", 'html[data-theme="light"] .choice-card'),
         ("AI Suggested Choice Cards", 'html[data-theme="light"] .ai-suggested-card'),
-        ("State Rank Matrix Table", 'html[data-theme="light"] .table-wrapper'),
+        ("Data table wrapper", 'html[data-theme="light"] .table-wrapper'),
         ("5-Yr Trend Modal", 'html[data-theme="light"] .modal-container'),
         ("5-Yr Trend Metrics Grid", 'html[data-theme="light"] .trend-metrics-grid'),
         ("Branch Swap Modal Controls", 'html[data-theme="light"] .branch-swap-add-btn'),

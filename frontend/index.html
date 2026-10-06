@@ -712,10 +712,10 @@
 
                 <button
                     class="nav-tab"
-                    data-tab="matrix"
+                    data-tab="historical"
                     type="button"
                 >
-                    State Rank Matrix
+                    TNEA Historical Records
                 </button>
 
             </div>
@@ -828,15 +828,51 @@
 
                 <div class="profile-inputs">
 
+                    <div class="form-group prediction-method-group">
 
-                    <div class="form-group">
+                        <label>
+                            Prediction Method
+                            <span class="required-label">
+                                Required
+                            </span>
+                        </label>
+
+                        <div class="method-toggle-container" role="radiogroup" aria-label="Prediction Method">
+
+                            <label class="method-radio-btn active" id="methodCutoffLabel">
+                                <input
+                                    type="radio"
+                                    name="predictionMethod"
+                                    id="methodCutoffRadio"
+                                    value="cutoff"
+                                    checked
+                                >
+                                <span>Aggregate Cutoff Mark (0–200)</span>
+                            </label>
+
+                            <label class="method-radio-btn" id="methodRankLabel">
+                                <input
+                                    type="radio"
+                                    name="predictionMethod"
+                                    id="methodRankRadio"
+                                    value="rank"
+                                >
+                                <span>TNEA State Rank</span>
+                            </label>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="form-group" id="cutoffInputGroup">
 
                         <label for="cutoffMark">
 
                             Aggregate Cutoff Mark
 
-                            <span class="optional-label">
-                                Optional
+                            <span class="required-label">
+                                Required
                             </span>
 
                         </label>
@@ -894,14 +930,14 @@
 
 
 
-                    <div class="form-group">
+                    <div class="form-group hidden" id="rankInputGroup">
 
                         <label for="stateRank">
 
                             TNEA State Rank
 
-                            <span class="optional-label">
-                                Optional
+                            <span class="required-label">
+                                Required
                             </span>
 
                         </label>
@@ -917,7 +953,7 @@
 
 
                         <small>
-                            Enter your TNEA state rank.
+                            Enter your official TNEA general state rank.
                         </small>
 
                     </div>
@@ -971,62 +1007,6 @@
                             </option>
 
                         </select>
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label for="counselingQuota">
-                            Quota Category
-                            <span class="optional-label">
-                                DoTE Counseling
-                            </span>
-                        </label>
-
-                        <select id="counselingQuota">
-                            <option value="GENERAL" selected>
-                                General Academic (Primary 2021–2025 Data)
-                            </option>
-                            <option value="GOVT_7_5">
-                                7.5% Govt School Preferential Quota
-                            </option>
-                            <option value="SPECIAL_SPORTS">
-                                Special: Sports Reservation
-                            </option>
-                            <option value="SPECIAL_EXSERVICE">
-                                Special: Ex-Servicemen Reservation
-                            </option>
-                            <option value="SPECIAL_PWD">
-                                Special: Differently Abled (PWD)
-                            </option>
-                        </select>
-
-                    </div>
-
-
-                </div>
-
-
-                <!-- =================================================
-                     QUOTA ADVISORY BANNER
-                ================================================== -->
-
-                <div id="quotaAdvisoryBanner" class="quota-advisory hidden">
-
-                    <div class="quota-advisory-icon">
-                        ℹ️
-                    </div>
-
-                    <div class="quota-advisory-text">
-
-                        <strong id="quotaAdvisoryTitle">
-                            7.5% Government School Preferential Quota
-                        </strong>
-
-                        <p id="quotaAdvisoryDesc">
-                            In Tamil Nadu TNEA counseling, Government school students (7.5% reservation) and Special Category applicants participate in dedicated preliminary counseling rounds administered directly by DoTE. Historical cutoffs displayed below represent General Academic benchmarks; for the 7.5% quota, closing cutoffs typically operate 15–30 marks lower at premier Tier-1/Tier-2 colleges. Use these results as a reliable reference baseline.
-                        </p>
 
                     </div>
 
@@ -1709,231 +1689,247 @@
 
 
         <!-- =====================================================
-             STATE RANK MATRIX
+             TNEA HISTORICAL RECORDS
         ====================================================== -->
 
         <section
-            id="matrixTab"
+            id="historicalTab"
             class="tab-content"
         >
 
-
             <div class="page-panel">
-
 
                 <div class="section-header">
 
                     <div>
 
                         <div class="eyebrow">
-                            STATE RANK MATRIX
+                            HISTORICAL DATA EXPLORER
                         </div>
 
-
                         <h2>
-                            Historical Closing Rank Matrix
+                            TNEA Historical Records (2021–2025)
                         </h2>
 
-
                         <p>
-                            View historical rank outcomes
-                            independently from the predictor.
+                            Explore multi-year admission cutoffs and closing ranks with real MySQL counseling data.
                         </p>
 
                     </div>
 
                 </div>
 
+                <!-- 6 FILTERS -->
+                <div class="historical-filters-grid">
 
-                <div class="matrix-filters">
-
-
-                    <div class="form-group">
-
-                        <label for="matrixCommunity">
-                            Community
-                        </label>
-
-
-                        <select
-                            id="matrixCommunity"
-                        >
-
-                            <option value="">
-                                Select community
-                            </option>
-
-                            <option value="OC">
-                                OC
-                            </option>
-
-                            <option value="BC">
-                                BC
-                            </option>
-
-                            <option value="BCM">
-                                BCM
-                            </option>
-
-                            <option value="MBC">
-                                MBC
-                            </option>
-
-                            <option value="SC">
-                                SC
-                            </option>
-
-                            <option value="SCA">
-                                SCA
-                            </option>
-
-                            <option value="ST">
-                                ST
-                            </option>
-
-                        </select>
-
+                    <!-- Filter 1: Year (Multi-select: 2021–2025) -->
+                    <div class="hist-filter-card" id="histYearGroup">
+                        <div class="hist-card-header">
+                            <span class="hist-filter-title">1. Academic Years</span>
+                            <div class="hist-mini-actions">
+                                <button type="button" id="histSelectAllYearsBtn" class="hist-text-btn">All</button>
+                                <span class="sep">•</span>
+                                <button type="button" id="histClearYearsBtn" class="hist-text-btn">Clear</button>
+                            </div>
+                        </div>
+                        <div class="pill-checkbox-group" id="histYearCheckboxes">
+                            <label class="pill-checkbox active">
+                                <input type="checkbox" name="histYear" value="2021" checked>
+                                <span>2021</span>
+                            </label>
+                            <label class="pill-checkbox active">
+                                <input type="checkbox" name="histYear" value="2022" checked>
+                                <span>2022</span>
+                            </label>
+                            <label class="pill-checkbox active">
+                                <input type="checkbox" name="histYear" value="2023" checked>
+                                <span>2023</span>
+                            </label>
+                            <label class="pill-checkbox active">
+                                <input type="checkbox" name="histYear" value="2024" checked>
+                                <span>2024</span>
+                            </label>
+                            <label class="pill-checkbox active">
+                                <input type="checkbox" name="histYear" value="2025" checked>
+                                <span>2025</span>
+                            </label>
+                        </div>
                     </div>
 
-
-                    <div class="form-group">
-
-                        <label for="matrixDistrict">
-                            District
-                        </label>
-
-
-                        <select
-                            id="matrixDistrict"
-                        >
-
-                            <option value="">
-                                All districts
-                            </option>
-
-                        </select>
-
+                    <!-- Filter 2: Display Type (Exactly one: Cutoff OR Closing Rank) -->
+                    <div class="hist-filter-card" id="histMetricGroup">
+                        <div class="hist-card-header">
+                            <span class="hist-filter-title">2. Display Metric</span>
+                            <span class="hist-filter-badge">Required</span>
+                        </div>
+                        <div class="metric-radio-group">
+                            <label class="metric-radio-btn active" id="metricCutoffLabel">
+                                <input type="radio" name="histDisplayType" value="cutoff" checked>
+                                <span>Cutoff Mark (0–200)</span>
+                            </label>
+                            <label class="metric-radio-btn" id="metricRankLabel">
+                                <input type="radio" name="histDisplayType" value="rank">
+                                <span>Closing Rank</span>
+                            </label>
+                        </div>
                     </div>
 
-
-                    <div class="form-group">
-
-                        <label for="matrixBranch">
-                            Branch
-                        </label>
-
-
-                        <select
-                            id="matrixBranch"
-                        >
-
-                            <option value="">
-                                All branches
-                            </option>
-
-                        </select>
-
+                    <!-- Filter 3: Community (Multi-select, Optional) -->
+                    <div class="hist-filter-card hist-card-wide" id="histCommunityGroup">
+                        <div class="hist-card-header">
+                            <span class="hist-filter-title">3. Community</span>
+                            <div class="hist-mini-actions">
+                                <span class="optional-label" style="font-size:11px;">Optional (All shown if none picked)</span>
+                                <button type="button" id="histClearCommsBtn" class="hist-text-btn" style="margin-left:6px;">Clear</button>
+                            </div>
+                        </div>
+                        <div class="pill-checkbox-group" id="histCommunityCheckboxes">
+                            <label class="pill-checkbox">
+                                <input type="checkbox" name="histCommunity" value="OC">
+                                <span>OC</span>
+                            </label>
+                            <label class="pill-checkbox">
+                                <input type="checkbox" name="histCommunity" value="BC">
+                                <span>BC</span>
+                            </label>
+                            <label class="pill-checkbox">
+                                <input type="checkbox" name="histCommunity" value="BCM">
+                                <span>BCM</span>
+                            </label>
+                            <label class="pill-checkbox">
+                                <input type="checkbox" name="histCommunity" value="MBC">
+                                <span>MBC</span>
+                            </label>
+                            <label class="pill-checkbox">
+                                <input type="checkbox" name="histCommunity" value="SC">
+                                <span>SC</span>
+                            </label>
+                            <label class="pill-checkbox">
+                                <input type="checkbox" name="histCommunity" value="SCA">
+                                <span>SCA</span>
+                            </label>
+                            <label class="pill-checkbox">
+                                <input type="checkbox" name="histCommunity" value="ST">
+                                <span>ST</span>
+                            </label>
+                        </div>
                     </div>
 
-
+                    <!-- Filter 4: District (Optional) -->
                     <div class="form-group">
-
-                        <label for="matrixCollege">
-                            Specific College
+                        <label for="histDistrict">
+                            4. District
+                            <span class="optional-label">Optional</span>
                         </label>
-
-
-                        <select
-                            id="matrixCollege"
-                        >
-
-                            <option value="">
-                                All colleges
-                            </option>
-
+                        <select id="histDistrict">
+                            <option value="">All Districts (38)</option>
                         </select>
-
                     </div>
 
+                    <!-- Filter 5: Branch / Course (Optional) -->
+                    <div class="form-group">
+                        <label for="histBranch">
+                            5. Branch / Course
+                            <span class="optional-label">Optional</span>
+                        </label>
+                        <select id="histBranch">
+                            <option value="">All Branches (116)</option>
+                        </select>
+                    </div>
 
-                    <div class="matrix-action">
-
-                        <button
-                            id="loadMatrixButton"
-                            class="primary-button"
-                            type="button"
-                        >
-                            Load Matrix
-                        </button>
-
+                    <!-- Filter 6: Specific College (Optional) -->
+                    <div class="form-group">
+                        <label for="histCollege">
+                            6. Specific College
+                            <span class="optional-label">Optional</span>
+                        </label>
+                        <select id="histCollege">
+                            <option value="">All Colleges (467)</option>
+                        </select>
                     </div>
 
                 </div>
 
+                <!-- ACTIONS -->
+                <div class="historical-actions-bar">
+                    <button
+                        id="loadHistoricalButton"
+                        class="primary-button"
+                        type="button"
+                    >
+                        Search Historical Records
+                    </button>
+                    <button
+                        id="resetHistoricalButton"
+                        class="secondary-button"
+                        type="button"
+                    >
+                        Reset Filters
+                    </button>
+                </div>
 
+                <!-- LOADING & ERROR -->
                 <div
-                    id="matrixLoading"
+                    id="historicalLoading"
                     class="loading hidden"
                 >
-                    Loading rank matrix...
+                    Querying multi-year historical counseling records from MySQL database...
                 </div>
 
-
                 <div
-                    id="matrixError"
+                    id="historicalError"
                     class="error-message hidden"
                 ></div>
 
-
+                <!-- RESULTS SECTION -->
                 <div
-                    id="matrixSection"
-                    class="table-wrapper hidden"
+                    id="historicalSection"
+                    class="historical-results-container hidden"
                 >
 
-                    <table>
+                    <!-- TOP PAGINATION & META BAR -->
+                    <div class="hist-meta-bar">
+                        <div class="hist-summary-text" id="historicalSummary">
+                            Showing 0 offerings
+                        </div>
 
-                        <thead>
+                        <div class="hist-pagination-controls">
+                            <label class="page-size-label">
+                                Per page:
+                                <select id="histPageSize">
+                                    <option value="25" selected>25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select>
+                            </label>
 
-                            <tr>
+                            <button type="button" id="histPrevPage" class="hist-page-nav-btn" disabled>&larr; Prev</button>
+                            <span id="histPageIndicator" class="hist-page-indicator">Page 1 of 1</span>
+                            <button type="button" id="histNextPage" class="hist-page-nav-btn" disabled>Next &rarr;</button>
+                        </div>
+                    </div>
 
-                                <th>
-                                    Position
-                                </th>
+                    <!-- GROUPED HEADER TABLE -->
+                    <div class="table-wrapper historical-table-wrapper">
+                        <table class="historical-grouped-table">
+                            <thead id="historicalTableHead">
+                                <!-- Dynamic Grouped Headers rendered by app.js -->
+                            </thead>
+                            <tbody id="historicalTableBody">
+                                <!-- Dynamic Rows rendered by app.js -->
+                            </tbody>
+                        </table>
+                    </div>
 
-                                <th>
-                                    College
-                                </th>
-
-                                <th>
-                                    Branch
-                                </th>
-
-                                <th>
-                                    District
-                                </th>
-
-                                <th>
-                                    Year
-                                </th>
-
-                                <th>
-                                    Cutoff
-                                </th>
-
-                                <th>
-                                    Closing Rank
-                                </th>
-
-                            </tr>
-
-                        </thead>
-
-
-                        <tbody
-                            id="matrixTableBody"
-                        ></tbody>
-
-                    </table>
+                    <!-- BOTTOM PAGINATION -->
+                    <div class="hist-meta-bar hist-meta-bar-bottom">
+                        <div id="historicalSummaryBottom" class="hist-summary-text"></div>
+                        <div class="hist-pagination-controls">
+                            <button type="button" id="histPrevPageBottom" class="hist-page-nav-btn" disabled>&larr; Prev</button>
+                            <span id="histPageIndicatorBottom" class="hist-page-indicator">Page 1 of 1</span>
+                            <button type="button" id="histNextPageBottom" class="hist-page-nav-btn" disabled>Next &rarr;</button>
+                        </div>
+                    </div>
 
                 </div>
 

@@ -12,6 +12,8 @@ __pycache__/
 .venv/
 venv/
 env/
+node_modules/
+.cache/
 
 # Editors and operating systems
 .vscode/
@@ -35,6 +37,8 @@ dist/
 *.log
 *.tmp
 *.bak
+*.sqlite
+*.sqlite3
 
 # MySQL local data directory and runtime files
 /data/mysql_data/

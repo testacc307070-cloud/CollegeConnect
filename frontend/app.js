@@ -38,8 +38,26 @@ const predictorTab =
 const optimizerTab =
     byId("optimizerTab");
 
-const matrixTab =
-    byId("matrixTab");
+const historicalTab =
+    byId("historicalTab");
+
+const methodCutoffRadio =
+    byId("methodCutoffRadio");
+
+const methodRankRadio =
+    byId("methodRankRadio");
+
+const methodCutoffLabel =
+    byId("methodCutoffLabel");
+
+const methodRankLabel =
+    byId("methodRankLabel");
+
+const cutoffInputGroup =
+    byId("cutoffInputGroup");
+
+const rankInputGroup =
+    byId("rankInputGroup");
 
 const predictionForm =
     byId("predictionForm");
@@ -52,18 +70,6 @@ const stateRankInput =
 
 const communitySelect =
     byId("community");
-
-const counselingQuotaSelect =
-    byId("counselingQuota");
-
-const quotaAdvisoryBanner =
-    byId("quotaAdvisoryBanner");
-
-const quotaAdvisoryTitle =
-    byId("quotaAdvisoryTitle");
-
-const quotaAdvisoryDesc =
-    byId("quotaAdvisoryDesc");
 
 const tierFilterSelect =
     byId("tierFilter");
@@ -207,32 +213,87 @@ const clearChoicesButton =
 
     byId("clearChoicesButton");
 
-const matrixCommunity =
-    byId("matrixCommunity");
+/* Historical Records DOM references */
+const histYearCheckboxes =
+    document.querySelectorAll('input[name="histYear"]');
 
-const matrixDistrict =
-    byId("matrixDistrict");
+const histSelectAllYearsBtn =
+    byId("histSelectAllYearsBtn");
 
-const matrixBranch =
-    byId("matrixBranch");
+const histClearYearsBtn =
+    byId("histClearYearsBtn");
 
-const matrixCollege =
-    byId("matrixCollege");
+const metricCutoffLabel =
+    byId("metricCutoffLabel");
 
-const loadMatrixButton =
-    byId("loadMatrixButton");
+const metricRankLabel =
+    byId("metricRankLabel");
 
-const matrixLoading =
-    byId("matrixLoading");
+const histMetricRadios =
+    document.querySelectorAll('input[name="histDisplayType"]');
 
-const matrixError =
-    byId("matrixError");
+const histCommunityCheckboxes =
+    document.querySelectorAll('input[name="histCommunity"]');
 
-const matrixSection =
-    byId("matrixSection");
+const histClearCommsBtn =
+    byId("histClearCommsBtn");
 
-const matrixTableBody =
-    byId("matrixTableBody");
+const histDistrict =
+    byId("histDistrict");
+
+const histBranch =
+    byId("histBranch");
+
+const histCollege =
+    byId("histCollege");
+
+const loadHistoricalButton =
+    byId("loadHistoricalButton");
+
+const resetHistoricalButton =
+    byId("resetHistoricalButton");
+
+const historicalLoading =
+    byId("historicalLoading");
+
+const historicalError =
+    byId("historicalError");
+
+const historicalSection =
+    byId("historicalSection");
+
+const historicalSummary =
+    byId("historicalSummary");
+
+const historicalSummaryBottom =
+    byId("historicalSummaryBottom");
+
+const histPageSize =
+    byId("histPageSize");
+
+const histPrevPage =
+    byId("histPrevPage");
+
+const histNextPage =
+    byId("histNextPage");
+
+const histPageIndicator =
+    byId("histPageIndicator");
+
+const histPrevPageBottom =
+    byId("histPrevPageBottom");
+
+const histNextPageBottom =
+    byId("histNextPageBottom");
+
+const histPageIndicatorBottom =
+    byId("histPageIndicatorBottom");
+
+const historicalTableHead =
+    byId("historicalTableHead");
+
+const historicalTableBody =
+    byId("historicalTableBody");
 
 const themeToggleBtn =
     byId("themeToggleBtn");
@@ -333,11 +394,15 @@ document.addEventListener(
 
         renderCollegeSuggestions();
 
-        await loadMatrixDistricts();
+        await loadHistoricalDistricts();
 
-        await loadMatrixBranches();
+        await loadHistoricalBranches();
 
-        await loadMatrixColleges();
+        await loadHistoricalColleges();
+
+        initPredictionMethodToggle();
+
+        initHistoricalEvents();
 
         renderChoices();
 
@@ -382,7 +447,7 @@ navTabs.forEach(
                     "active"
                 );
 
-                matrixTab.classList.remove(
+                historicalTab?.classList.remove(
                     "active"
                 );
 
@@ -414,10 +479,10 @@ navTabs.forEach(
 
                 if (
                     target ===
-                    "matrix"
+                    "historical"
                 ) {
 
-                    matrixTab.classList.add(
+                    historicalTab?.classList.add(
                         "active"
                     );
 
@@ -1558,6 +1623,47 @@ document.addEventListener(
 );
 
 /* =========================================================
+   PREDICTION METHOD TOGGLE
+========================================================= */
+
+function initPredictionMethodToggle() {
+    function setMethod(method) {
+        if (method === "cutoff") {
+            if (methodCutoffRadio) methodCutoffRadio.checked = true;
+            if (methodRankRadio) methodRankRadio.checked = false;
+            methodCutoffLabel?.classList.add("active");
+            methodRankLabel?.classList.remove("active");
+            cutoffInputGroup?.classList.remove("hidden");
+            rankInputGroup?.classList.add("hidden");
+            if (cutoffInput) cutoffInput.disabled = false;
+            if (stateRankInput) {
+                stateRankInput.disabled = true;
+                stateRankInput.value = "";
+            }
+        } else {
+            if (methodRankRadio) methodRankRadio.checked = true;
+            if (methodCutoffRadio) methodCutoffRadio.checked = false;
+            methodRankLabel?.classList.add("active");
+            methodCutoffLabel?.classList.remove("active");
+            rankInputGroup?.classList.remove("hidden");
+            cutoffInputGroup?.classList.add("hidden");
+            if (stateRankInput) stateRankInput.disabled = false;
+            if (cutoffInput) {
+                cutoffInput.disabled = true;
+                cutoffInput.value = "";
+            }
+        }
+    }
+
+    methodCutoffRadio?.addEventListener("change", () => setMethod("cutoff"));
+    methodRankRadio?.addEventListener("change", () => setMethod("rank"));
+    methodCutoffLabel?.addEventListener("click", () => setMethod("cutoff"));
+    methodRankLabel?.addEventListener("click", () => setMethod("rank"));
+
+    setMethod(methodCutoffRadio?.checked ? "cutoff" : "rank");
+}
+
+/* =========================================================
    PREDICTION FORM
 ========================================================= */
 
@@ -1571,158 +1677,51 @@ predictionForm.addEventListener(
 
         hideRagError();
 
-        const cutoffText =
-            cutoffInput.value.trim();
+        const isCutoffMethod = methodCutoffRadio ? methodCutoffRadio.checked : true;
+        const community = communitySelect.value;
 
-        const rankText =
-            stateRankInput.value.trim();
-
-        const community =
-            communitySelect.value;
-
-        if (
-            !cutoffText &&
-            !rankText
-        ) {
-
-            showError(
-                "Please enter either your cutoff mark or your state rank."
-            );
-
+        if (!community) {
+            showError("Please select your community.");
             return;
-
         }
 
-        if (
-            cutoffText &&
-            rankText
-        ) {
-
-            showError(
-                "Please enter either Cutoff Mark or State Rank, not both."
-            );
-
-            return;
-
-        }
-
-        if (
-            !community
-        ) {
-
-            showError(
-                "Please select your community."
-            );
-
-            return;
-
-        }
-
-        if (
-            cutoffText
-        ) {
-
-            const cutoff =
-                Number(
-                    cutoffText
-                );
-
-            if (
-                !Number.isFinite(
-                    cutoff
-                ) ||
-                cutoff <= 0 ||
-                cutoff > 200
-            ) {
-
-                showError(
-                    "Cutoff mark must be greater than 0 and at most 200."
-                );
-
+        if (isCutoffMethod) {
+            const cutoffText = cutoffInput.value.trim();
+            if (!cutoffText) {
+                showError("Please enter your aggregate cutoff mark.");
                 return;
-
             }
-
-            await runPrediction(
-                "cutoff",
-                {
-
-                    cutoffMark:
-                        cutoff,
-
-                    community:
-                        community,
-
-                    districts:
-                        [
-                            ...selectedDistricts
-                        ],
-
-                    branches:
-                        [
-                            ...selectedBranches
-                        ],
-
-                    collegeCode:
-                        selectedCollege
-                            ? selectedCollege.college_code
-                            : null
-
-                }
-            );
-
-            return;
-
-        }
-
-        const rank =
-            Number(
-                rankText
-            );
-
-        if (
-            !Number.isInteger(
-                rank
-            ) ||
-            rank <= 0
-        ) {
-
-            showError(
-                "State rank must be a positive whole number."
-            );
-
-            return;
-
-        }
-
-        await runPrediction(
-            "rank",
-            {
-
-                stateRank:
-                    rank,
-
-                community:
-                    community,
-
-                districts:
-                    [
-                        ...selectedDistricts
-                    ],
-
-                branches:
-                    [
-                        ...selectedBranches
-                    ],
-
-                collegeCode:
-                    selectedCollege
-                        ? selectedCollege.college_code
-                        : null
-
+            const cutoff = Number(cutoffText);
+            if (!Number.isFinite(cutoff) || cutoff <= 0 || cutoff > 200) {
+                showError("Cutoff mark must be greater than 0 and at most 200.");
+                return;
             }
-        );
-
+            await runPrediction("cutoff", {
+                cutoffMark: cutoff,
+                community: community,
+                districts: [...selectedDistricts],
+                branches: [...selectedBranches],
+                collegeCode: selectedCollege ? selectedCollege.college_code : null
+            });
+        } else {
+            const rankText = stateRankInput.value.trim();
+            if (!rankText) {
+                showError("Please enter your TNEA state rank.");
+                return;
+            }
+            const rank = Number(rankText);
+            if (!Number.isInteger(rank) || rank <= 0) {
+                showError("State rank must be a positive whole number.");
+                return;
+            }
+            await runPrediction("rank", {
+                stateRank: rank,
+                community: community,
+                districts: [...selectedDistricts],
+                branches: [...selectedBranches],
+                collegeCode: selectedCollege ? selectedCollege.college_code : null
+            });
+        }
     }
 );
 
@@ -1802,15 +1801,6 @@ async function runPrediction(
             );
 
         }
-
-        const quotaVal =
-            counselingQuotaSelect?.value ||
-            "GENERAL";
-
-        params.set(
-            "quota",
-            quotaVal
-        );
 
         const tierVal =
             tierFilterSelect?.value ||
@@ -5366,7 +5356,7 @@ exportPdfButton?.addEventListener(
                 cutoff_mark: cutoffInput?.value ? parseFloat(cutoffInput.value) : (latestPredictionData?.student_input?.cutoff_mark || null),
                 state_rank: stateRankInput?.value ? parseInt(stateRankInput.value, 10) : (latestPredictionData?.student_input?.state_rank || null),
                 community: latestPredictionData?.student_input?.community || communitySelect?.value || "OC",
-                quota: latestPredictionData?.student_input?.quota || counselingQuotaSelect?.value || "GENERAL"
+                quota: latestPredictionData?.student_input?.quota || "GENERAL"
             };
 
             const response = await fetch("/api/choices/export-pdf", {
@@ -5514,499 +5504,421 @@ function csvEscape(
 }
 
 /* =========================================================
-   MATRIX
+   TNEA HISTORICAL RECORDS EXPLORER
 ========================================================= */
 
-async function loadMatrixDistricts() {
+let historicalCurrentPage = 1;
+let historicalPageSizeVal = 25;
+let historicalTotalPages = 1;
+let historicalTotalOfferings = 0;
 
+async function loadHistoricalDistricts() {
+    if (!histDistrict) return;
     try {
+        const response = await fetch("/api/districts");
+        const data = await response.json();
+        if (!response.ok || data.status !== "ok") return;
 
-        const response =
-            await fetch(
-                "/api/districts"
-            );
-
-        const data =
-            await response.json();
-
-        if (
-            !response.ok ||
-            data.status !== "ok"
-        ) {
-
-            return;
-
-        }
-
-        matrixDistrict.innerHTML = `
-            <option value="">
-                All districts
-            </option>
-        `;
-
-        data.districts.forEach(
-            district => {
-
-                const option =
-                    document.createElement(
-                        "option"
-                    );
-
-                option.value =
-                    district;
-
-                option.textContent =
-                    district;
-
-                matrixDistrict.appendChild(
-                    option
-                );
-
-            }
-        );
-
-    } catch {
-
-        // Ignore initial matrix errors.
-
+        histDistrict.innerHTML = `<option value="">All Districts (${data.districts.length})</option>`;
+        data.districts.forEach(d => {
+            const opt = document.createElement("option");
+            opt.value = d;
+            opt.textContent = d;
+            histDistrict.appendChild(opt);
+        });
+    } catch (e) {
+        console.error("Error loading historical districts:", e);
     }
-
 }
 
-async function loadMatrixBranches() {
-
+async function loadHistoricalBranches() {
+    if (!histBranch) return;
     try {
-
-        const params =
-            new URLSearchParams();
-
-        if (
-            matrixDistrict.value
-        ) {
-
-            params.set(
-                "district",
-                matrixDistrict.value
-            );
-
+        const params = new URLSearchParams();
+        if (histDistrict?.value) {
+            params.set("district", histDistrict.value);
         }
+        const url = params.toString() ? `/api/branches?${params.toString()}` : "/api/branches";
+        const response = await fetch(url);
+        const data = await response.json();
+        if (!response.ok || data.status !== "ok") return;
 
-        const query =
-            params.toString();
-
-        const url =
-            query
-                ? `/api/branches?${query}`
-                : "/api/branches";
-
-        const response =
-            await fetch(
-                url
-            );
-
-        const data =
-            await response.json();
-
-        if (
-            !response.ok ||
-            data.status !== "ok"
-        ) {
-
-            return;
-
-        }
-
-        matrixBranch.innerHTML = `
-            <option value="">
-                All branches
-            </option>
-        `;
-
-        data.branches.forEach(
-            branch => {
-
-                const option =
-                    document.createElement(
-                        "option"
-                    );
-
-                option.value =
-                    branch.branch_code;
-
-                option.textContent =
-                    `${branch.branch_code} - ${branch.branch_name}`;
-
-                matrixBranch.appendChild(
-                    option
-                );
-
-            }
-        );
-
-    } catch {
-
-        // Ignore initial matrix errors.
-
+        histBranch.innerHTML = `<option value="">All Branches (${data.branches.length})</option>`;
+        data.branches.forEach(b => {
+            const opt = document.createElement("option");
+            opt.value = b.branch_code;
+            opt.textContent = `${b.branch_code} - ${b.branch_name}`;
+            histBranch.appendChild(opt);
+        });
+    } catch (e) {
+        console.error("Error loading historical branches:", e);
     }
-
 }
 
-async function loadMatrixColleges() {
-
+async function loadHistoricalColleges() {
+    if (!histCollege) return;
     try {
-
-        const params =
-            new URLSearchParams();
-
-        if (
-            matrixDistrict &&
-            matrixDistrict.value
-        ) {
-
-            params.set(
-                "district",
-                matrixDistrict.value
-            );
-
+        const params = new URLSearchParams();
+        if (histDistrict?.value) {
+            params.set("district", histDistrict.value);
         }
-
-        if (
-            matrixBranch &&
-            matrixBranch.value
-        ) {
-
-            params.set(
-                "branch_code",
-                matrixBranch.value
-            );
-
+        if (histBranch?.value) {
+            params.set("branch_code", histBranch.value);
         }
+        const url = params.toString() ? `/api/colleges?${params.toString()}` : "/api/colleges";
+        const response = await fetch(url);
+        const data = await response.json();
+        if (!response.ok || data.status !== "ok") return;
 
-        const query =
-            params.toString();
-
-        const url =
-            query
-                ? `/api/colleges?${query}`
-                : "/api/colleges";
-
-        const response =
-            await fetch(
-                url
-            );
-
-        const data =
-            await response.json();
-
-        if (
-            !response.ok ||
-            data.status !== "ok" ||
-            !matrixCollege
-        ) {
-
-            return;
-
-        }
-
-        matrixCollege.innerHTML = `
-            <option value="">
-                All colleges
-            </option>
-        `;
-
-        data.colleges.forEach(
-            college => {
-
-                const option =
-                    document.createElement(
-                        "option"
-                    );
-
-                option.value =
-                    college.college_code;
-
-                option.textContent =
-                    `${college.college_code} - ${college.college_name}`;
-
-                matrixCollege.appendChild(
-                    option
-                );
-
-            }
-        );
-
-    } catch {
-
-        // Ignore initial matrix errors.
-
+        histCollege.innerHTML = `<option value="">All Colleges (${data.colleges.length})</option>`;
+        data.colleges.forEach(c => {
+            const opt = document.createElement("option");
+            opt.value = c.college_code;
+            opt.textContent = `${c.college_code} - ${c.college_name}`;
+            histCollege.appendChild(opt);
+        });
+    } catch (e) {
+        console.error("Error loading historical colleges:", e);
     }
-
 }
 
-matrixDistrict?.addEventListener(
-    "change",
-    async () => {
+function setHistoricalLoading(loading) {
+    if (historicalLoading) historicalLoading.classList.toggle("hidden", !loading);
+}
 
-        await loadMatrixBranches();
-        await loadMatrixColleges();
-
+function showHistoricalError(msg) {
+    if (historicalError) {
+        historicalError.textContent = msg;
+        historicalError.classList.remove("hidden");
     }
-);
+}
 
-matrixBranch?.addEventListener(
-    "change",
-    async () => {
-
-        await loadMatrixColleges();
-
+function hideHistoricalError() {
+    if (historicalError) {
+        historicalError.textContent = "";
+        historicalError.classList.add("hidden");
     }
-);
+}
 
-loadMatrixButton?.addEventListener(
-    "click",
-    async () => {
+function getSelectedHistoricalYears() {
+    const checked = [];
+    document.querySelectorAll('input[name="histYear"]:checked').forEach(cb => {
+        checked.push(cb.value);
+    });
+    return checked;
+}
 
-        hideMatrixError();
+function getSelectedHistoricalMetric() {
+    const checked = document.querySelector('input[name="histDisplayType"]:checked');
+    return checked ? checked.value : "cutoff";
+}
 
-        if (
-            !matrixCommunity.value
-        ) {
+function getSelectedHistoricalCommunities() {
+    const checked = [];
+    document.querySelectorAll('input[name="histCommunity"]:checked').forEach(cb => {
+        checked.push(cb.value);
+    });
+    return checked;
+}
 
-            showMatrixError(
-                "Please select a community."
-            );
+async function searchHistoricalRecords(page = 1) {
+    hideHistoricalError();
 
-            return;
+    const years = getSelectedHistoricalYears();
+    if (years.length === 0) {
+        showHistoricalError("Please select at least one academic year (2021–2025).");
+        return;
+    }
 
+    const metric = getSelectedHistoricalMetric();
+    const communities = getSelectedHistoricalCommunities();
+    const districtVal = histDistrict?.value?.trim() || "";
+    const branchVal = histBranch?.value?.trim() || "";
+    const collegeVal = histCollege?.value?.trim() || "";
+    historicalCurrentPage = page;
+    historicalPageSizeVal = Number(histPageSize?.value) || 25;
+
+    const params = new URLSearchParams();
+    years.forEach(y => params.append("year", y));
+    params.set("metric", metric);
+    communities.forEach(c => params.append("community", c));
+    if (districtVal) params.set("district", districtVal);
+    if (branchVal) params.set("branch_code", branchVal);
+    if (collegeVal) params.set("college_code", collegeVal);
+    params.set("page", String(page));
+    params.set("page_size", String(historicalPageSizeVal));
+
+    setHistoricalLoading(true);
+    if (historicalSection) historicalSection.classList.add("hidden");
+
+    try {
+        const response = await fetch(`/api/historical-records?${params.toString()}`);
+        const data = await response.json();
+
+        if (!response.ok || data.status !== "ok") {
+            throw new Error(data.message || "Failed to load historical admission records.");
         }
 
-        setMatrixLoading(
-            true
-        );
-
-        try {
-
-            const params =
-                new URLSearchParams();
-
-            params.set(
-                "community",
-                matrixCommunity.value
-            );
-
-            if (
-                matrixDistrict.value
-            ) {
-
-                params.set(
-                    "district",
-                    matrixDistrict.value
-                );
-
-            }
-
-            if (
-                matrixBranch.value
-            ) {
-
-                params.set(
-                    "branch_code",
-                    matrixBranch.value
-                );
-
-            }
-
-            if (
-                matrixCollege &&
-                matrixCollege.value
-            ) {
-
-                params.set(
-                    "college_code",
-                    matrixCollege.value
-                );
-
-            }
-
-            const response =
-                await fetch(
-                    `/api/rank-matrix?${params.toString()}`
-                );
-
-            const data =
-                await response.json();
-
-            if (
-                !response.ok ||
-                data.status !== "ok"
-            ) {
-
-                throw new Error(
-                    data.message ||
-                    "Failed to load rank matrix."
-                );
-
-            }
-
-            renderMatrix(
-                data
-            );
-
-        } catch (
-            error
-        ) {
-
-            showMatrixError(
-                error.message
-            );
-
-        } finally {
-
-            setMatrixLoading(
-                false
-            );
-
-        }
-
+        renderHistoricalTable(data);
+    } catch (err) {
+        showHistoricalError(err.message || "Network error loading historical records.");
+    } finally {
+        setHistoricalLoading(false);
     }
-);
+}
 
-function renderMatrix(
-    data
-) {
+function renderHistoricalTable(data) {
+    if (!historicalTableHead || !historicalTableBody) return;
 
-    const results =
-        data.results ||
-        [];
+    historicalTotalOfferings = data.total_count || 0;
+    historicalTotalPages = data.total_pages || 1;
+    historicalCurrentPage = data.page || 1;
 
-    matrixTableBody.innerHTML =
-        "";
+    // Update summary text and pagination UI
+    const startIdx = historicalTotalOfferings === 0 ? 0 : (historicalCurrentPage - 1) * data.page_size + 1;
+    const endIdx = Math.min(historicalCurrentPage * data.page_size, historicalTotalOfferings);
+    const metricLabel = data.metric === "rank" ? "Closing Ranks" : "Cutoff Marks";
+    const summaryText = `Found ${historicalTotalOfferings.toLocaleString()} offerings (Showing ${startIdx}–${endIdx}) · Metric: ${metricLabel}`;
 
-    if (
-        results.length ===
-        0
-    ) {
+    if (historicalSummary) historicalSummary.textContent = summaryText;
+    if (historicalSummaryBottom) historicalSummaryBottom.textContent = summaryText;
 
-        matrixTableBody.innerHTML = `
+    const pageStr = `Page ${historicalCurrentPage} of ${historicalTotalPages}`;
+    if (histPageIndicator) histPageIndicator.textContent = pageStr;
+    if (histPageIndicatorBottom) histPageIndicatorBottom.textContent = pageStr;
+
+    const canPrev = historicalCurrentPage > 1;
+    const canNext = historicalCurrentPage < historicalTotalPages;
+
+    if (histPrevPage) histPrevPage.disabled = !canPrev;
+    if (histNextPage) histNextPage.disabled = !canNext;
+    if (histPrevPageBottom) histPrevPageBottom.disabled = !canPrev;
+    if (histNextPageBottom) histNextPageBottom.disabled = !canNext;
+
+    // Render grouped header
+    const years = data.years || [];
+    const communities = data.communities || [];
+
+    // Header Row 1: College | Branch | District | Year 1 [colspan=N] | Year 2 [colspan=N] ...
+    let headHtml = `<tr>
+        <th rowspan="2" class="sticky-col col-college">College</th>
+        <th rowspan="2" class="sticky-col col-branch">Branch / Course</th>
+        <th rowspan="2" class="sticky-col col-district">District</th>`;
+
+    years.forEach(yr => {
+        headHtml += `<th colspan="${communities.length}" class="th-year-parent">${yr}</th>`;
+    });
+    headHtml += `</tr>`;
+
+    // Header Row 2: Sub-communities under each year
+    headHtml += `<tr>`;
+    years.forEach(yr => {
+        communities.forEach(comm => {
+            headHtml += `<th class="th-comm-sub">${escapeHtml(comm)}</th>`;
+        });
+    });
+    headHtml += `</tr>`;
+
+    historicalTableHead.innerHTML = headHtml;
+
+    // Render rows
+    const records = data.records || [];
+    historicalTableBody.innerHTML = "";
+
+    if (records.length === 0) {
+        const totalCols = 3 + years.length * communities.length;
+        historicalTableBody.innerHTML = `
             <tr>
-                <td colspan="7">
-                    No historical rank records found.
+                <td colspan="${totalCols}" style="text-align: center; padding: 36px; color: var(--muted);">
+                    No historical admission records match the selected filters. Try broadening your criteria.
                 </td>
             </tr>
         `;
-
     } else {
+        const isCutoff = data.metric === "cutoff";
+        records.forEach(rec => {
+            const tr = document.createElement("tr");
 
-        results.forEach(
-            (
-                result,
-                index
-            ) => {
+            let rowHtml = `
+                <td class="sticky-col col-college">
+                    <div style="font-weight: 700; color: var(--text);">${escapeHtml(rec.college_name || "—")}</div>
+                    <div style="font-size: 0.75rem; color: var(--muted); margin-top: 3px;">Code: <strong>${escapeHtml(String(rec.college_code))}</strong></div>
+                </td>
+                <td class="sticky-col col-branch">
+                    <div style="font-weight: 600; color: #818cf8;">${escapeHtml(rec.branch_name || rec.branch_code || "—")}</div>
+                    <div style="font-size: 0.75rem; color: var(--muted); margin-top: 3px;">Code: <strong>${escapeHtml(rec.branch_code)}</strong></div>
+                </td>
+                <td class="sticky-col col-district" style="color: var(--muted); font-size: 0.8rem;">
+                    ${escapeHtml(rec.district || "—")}
+                </td>
+            `;
 
-                const row =
-                    document.createElement(
-                        "tr"
-                    );
+            years.forEach(yr => {
+                const yrStr = String(yr);
+                const yrMetrics = rec.metrics?.[yrStr] || {};
+                communities.forEach(comm => {
+                    const val = yrMetrics[comm];
+                    if (val !== null && val !== undefined) {
+                        if (isCutoff) {
+                            rowHtml += `<td class="metric-cell metric-cell-cutoff">${Number(val).toFixed(2)}</td>`;
+                        } else {
+                            rowHtml += `<td class="metric-cell metric-cell-rank">${Number(val).toLocaleString()}</td>`;
+                        }
+                    } else {
+                        rowHtml += `<td class="metric-cell empty-cell">—</td>`;
+                    }
+                });
+            });
 
-                row.innerHTML = `
-
-                    <td>
-                        ${index + 1}
-                    </td>
-
-                    <td>
-
-                        <div class="college-name">
-
-                            ${escapeHtml(
-                                result.college_name ||
-                                "—"
-                            )}
-
-                        </div>
-
-                        <div class="code-text">
-
-                            Code:
-
-                            ${escapeHtml(
-                                String(
-                                    result.college_code ??
-                                    "—"
-                                )
-                            )}
-
-                        </div>
-
-                    </td>
-
-                    <td>
-
-                        ${escapeHtml(
-                            result.branch_name ||
-                            result.branch_code ||
-                            "—"
-                        )}
-
-                    </td>
-
-                    <td>
-
-                        ${escapeHtml(
-                            result.district ||
-                            "—"
-                        )}
-
-                    </td>
-
-                    <td>
-
-                        ${escapeHtml(
-                            String(
-                                result.year ??
-                                "—"
-                            )
-                        )}
-
-                    </td>
-
-                    <td>
-
-                        ${escapeHtml(
-                            String(
-                                result.cutoff_mark ??
-                                "—"
-                            )
-                        )}
-
-                    </td>
-
-                    <td>
-
-                        ${escapeHtml(
-                            String(
-                                result.closing_rank ??
-                                "—"
-                            )
-                        )}
-
-                    </td>
-
-                `;
-
-                matrixTableBody.appendChild(
-                    row
-                );
-
-            }
-        );
-
+            tr.innerHTML = rowHtml;
+            historicalTableBody.appendChild(tr);
+        });
     }
 
-    matrixSection.classList.remove(
-        "hidden"
-    );
+    if (historicalSection) historicalSection.classList.remove("hidden");
+}
 
+function initHistoricalEvents() {
+    // Pill checkboxes active toggle for years
+    document.querySelectorAll('#histYearCheckboxes .pill-checkbox').forEach(label => {
+        const cb = label.querySelector('input[type="checkbox"]');
+        if (!cb) return;
+        label.classList.toggle('active', cb.checked);
+        cb.addEventListener('change', () => {
+            label.classList.toggle('active', cb.checked);
+        });
+    });
+
+    // Select all years button
+    byId("histSelectAllYearsBtn")?.addEventListener("click", () => {
+        document.querySelectorAll('#histYearCheckboxes .pill-checkbox').forEach(label => {
+            const cb = label.querySelector('input[type="checkbox"]');
+            if (cb) {
+                cb.checked = true;
+                label.classList.add('active');
+            }
+        });
+    });
+
+    // Clear years button
+    byId("histClearYearsBtn")?.addEventListener("click", () => {
+        document.querySelectorAll('#histYearCheckboxes .pill-checkbox').forEach(label => {
+            const cb = label.querySelector('input[type="checkbox"]');
+            if (cb) {
+                cb.checked = false;
+                label.classList.remove('active');
+            }
+        });
+    });
+
+    // Pill checkboxes active toggle for communities
+    document.querySelectorAll('#histCommunityCheckboxes .pill-checkbox').forEach(label => {
+        const cb = label.querySelector('input[type="checkbox"]');
+        if (!cb) return;
+        label.classList.toggle('active', cb.checked);
+        cb.addEventListener('change', () => {
+            label.classList.toggle('active', cb.checked);
+        });
+    });
+
+    // Clear communities button
+    byId("histClearCommsBtn")?.addEventListener("click", () => {
+        document.querySelectorAll('#histCommunityCheckboxes .pill-checkbox').forEach(label => {
+            const cb = label.querySelector('input[type="checkbox"]');
+            if (cb) {
+                cb.checked = false;
+                label.classList.remove('active');
+            }
+        });
+    });
+
+    // Display metric radios toggle
+    document.querySelectorAll('input[name="histDisplayType"]').forEach(radio => {
+        radio.addEventListener("change", () => {
+            const cutoffRadio = document.querySelector('input[name="histDisplayType"][value="cutoff"]');
+            if (cutoffRadio?.checked) {
+                metricCutoffLabel?.classList.add("active");
+                metricRankLabel?.classList.remove("active");
+            } else {
+                metricRankLabel?.classList.add("active");
+                metricCutoffLabel?.classList.remove("active");
+            }
+        });
+    });
+
+    // Filter cascade changes
+    histDistrict?.addEventListener("change", async () => {
+        await loadHistoricalBranches();
+        await loadHistoricalColleges();
+    });
+
+    histBranch?.addEventListener("change", async () => {
+        await loadHistoricalColleges();
+    });
+
+    // Search button
+    byId("loadHistoricalButton")?.addEventListener("click", () => {
+        searchHistoricalRecords(1);
+    });
+
+    // Reset filters button
+    byId("resetHistoricalButton")?.addEventListener("click", async () => {
+        // Reset years to all checked
+        document.querySelectorAll('#histYearCheckboxes .pill-checkbox').forEach(label => {
+            const cb = label.querySelector('input[type="checkbox"]');
+            if (cb) {
+                cb.checked = true;
+                label.classList.add('active');
+            }
+        });
+
+        // Reset metric to cutoff
+        const cutoffRadio = document.querySelector('input[name="histDisplayType"][value="cutoff"]');
+        if (cutoffRadio) cutoffRadio.checked = true;
+        metricCutoffLabel?.classList.add("active");
+        metricRankLabel?.classList.remove("active");
+
+        // Clear communities
+        document.querySelectorAll('#histCommunityCheckboxes .pill-checkbox').forEach(label => {
+            const cb = label.querySelector('input[type="checkbox"]');
+            if (cb) {
+                cb.checked = false;
+                label.classList.remove('active');
+            }
+        });
+
+        // Reset selects
+        if (histDistrict) histDistrict.value = "";
+        await loadHistoricalBranches();
+        if (histBranch) histBranch.value = "";
+        await loadHistoricalColleges();
+        if (histCollege) histCollege.value = "";
+
+        // Reset page size
+        if (histPageSize) histPageSize.value = "25";
+
+        hideHistoricalError();
+        if (historicalSection) historicalSection.classList.add("hidden");
+    });
+
+    // Page size dropdown
+    histPageSize?.addEventListener("change", () => {
+        searchHistoricalRecords(1);
+    });
+
+    // Pagination buttons
+    histPrevPage?.addEventListener("click", () => {
+        if (historicalCurrentPage > 1) searchHistoricalRecords(historicalCurrentPage - 1);
+    });
+    histNextPage?.addEventListener("click", () => {
+        if (historicalCurrentPage < historicalTotalPages) searchHistoricalRecords(historicalCurrentPage + 1);
+    });
+    histPrevPageBottom?.addEventListener("click", () => {
+        if (historicalCurrentPage > 1) searchHistoricalRecords(historicalCurrentPage - 1);
+    });
+    histNextPageBottom?.addEventListener("click", () => {
+        if (historicalCurrentPage < historicalTotalPages) searchHistoricalRecords(historicalCurrentPage + 1);
+    });
 }
 
 /* =========================================================
@@ -6083,14 +5995,17 @@ clearButton?.addEventListener(
 
         hideError();
 
-        hideRagError();
-
-        if (counselingQuotaSelect) {
-            counselingQuotaSelect.value = "GENERAL";
-        }
-
-        if (quotaAdvisoryBanner) {
-            quotaAdvisoryBanner.classList.add("hidden");
+        // Reset Prediction Method to Cutoff
+        if (methodCutoffRadio) methodCutoffRadio.checked = true;
+        if (methodRankRadio) methodRankRadio.checked = false;
+        methodCutoffLabel?.classList.add("active");
+        methodRankLabel?.classList.remove("active");
+        cutoffInputGroup?.classList.remove("hidden");
+        rankInputGroup?.classList.add("hidden");
+        if (cutoffInput) cutoffInput.disabled = false;
+        if (stateRankInput) {
+            stateRankInput.disabled = true;
+            stateRankInput.value = "";
         }
 
         if (tierFilterSelect) {
@@ -6101,35 +6016,6 @@ clearButton?.addEventListener(
 
     }
 );
-
-/* =========================================================
-   COUNSELING QUOTA SELECTION & ADVISORY
-========================================================= */
-
-counselingQuotaSelect?.addEventListener("change", () => {
-    const val = counselingQuotaSelect.value;
-    if (!quotaAdvisoryBanner) return;
-
-    if (val === "GENERAL") {
-        quotaAdvisoryBanner.classList.add("hidden");
-    } else if (val === "GOVT_7_5") {
-        if (quotaAdvisoryTitle) quotaAdvisoryTitle.textContent = "7.5% Government School Preferential Quota";
-        if (quotaAdvisoryDesc) quotaAdvisoryDesc.textContent = "In Tamil Nadu TNEA counseling, Government school students (7.5% reservation) participate in dedicated preliminary counseling rounds administered directly by DoTE. Historical cutoffs displayed below represent General Academic benchmarks; for the 7.5% quota, closing cutoffs typically operate 15–30 marks lower at premier Tier-1/Tier-2 colleges. Use these results as a reliable reference baseline.";
-        quotaAdvisoryBanner.classList.remove("hidden");
-    } else if (val === "SPECIAL_SPORTS") {
-        if (quotaAdvisoryTitle) quotaAdvisoryTitle.textContent = "Special Reservation: Sports Quota";
-        if (quotaAdvisoryDesc) quotaAdvisoryDesc.textContent = "Sports quota seats (500 seats allocated by DoTE) are allotted through in-person certificate verification and dedicated sports counseling rounds before general academic rounds. General cutoffs represent a quality and prestige benchmark.";
-        quotaAdvisoryBanner.classList.remove("hidden");
-    } else if (val === "SPECIAL_EXSERVICE") {
-        if (quotaAdvisoryTitle) quotaAdvisoryTitle.textContent = "Special Reservation: Ex-Servicemen Quota";
-        if (quotaAdvisoryDesc) quotaAdvisoryDesc.textContent = "Wards of Ex-Servicemen receive special preliminary allotment by DoTE prior to general rounds. General cutoffs reflect academic standards across institutions.";
-        quotaAdvisoryBanner.classList.remove("hidden");
-    } else if (val === "SPECIAL_PWD") {
-        if (quotaAdvisoryTitle) quotaAdvisoryTitle.textContent = "Special Reservation: Differently Abled (PWD)";
-        if (quotaAdvisoryDesc) quotaAdvisoryDesc.textContent = "Differently Abled (PWD) reservation is conducted through dedicated medical board verification and early priority allotment. General cutoffs reflect standard baseline thresholds.";
-        quotaAdvisoryBanner.classList.remove("hidden");
-    }
-});
 
 /* =========================================================
    CLASS 12 CUTOFF CALCULATOR
@@ -6250,41 +6136,6 @@ function hideRagError() {
         "";
 
     ragError.classList.add(
-        "hidden"
-    );
-
-}
-
-function setMatrixLoading(
-    visible
-) {
-
-    matrixLoading.classList.toggle(
-        "hidden",
-        !visible
-    );
-
-}
-
-function showMatrixError(
-    message
-) {
-
-    matrixError.textContent =
-        message;
-
-    matrixError.classList.remove(
-        "hidden"
-    );
-
-}
-
-function hideMatrixError() {
-
-    matrixError.textContent =
-        "";
-
-    matrixError.classList.add(
         "hidden"
     );
 
@@ -6515,7 +6366,7 @@ async function openTrendModal(result) {
     const collegeName = result.college_name || `College ${result.college_code}`;
     const branchCode = result.branch_code || "";
     const community = result.community || latestPredictionData?.student_input?.community || communitySelect?.value || "OC";
-    const quota = result.quota || latestPredictionData?.student_input?.quota || counselingQuotaSelect?.value || "GENERAL";
+    const quota = result.quota || latestPredictionData?.student_input?.quota || "GENERAL";
 
     // Format title exactly like reference screenshot: "College Name (BranchCode)"
     trendModalTitle.textContent = `${collegeName} (${branchCode})`;
@@ -6813,7 +6664,7 @@ async function openBranchSwapModal(result) {
     const collegeName = result.college_name || `College ${result.college_code}`;
     const district = result.district || "";
     const community = result.community || latestPredictionData?.student_input?.community || communitySelect?.value || "OC";
-    const quota = result.quota || latestPredictionData?.student_input?.quota || counselingQuotaSelect?.value || "GENERAL";
+    const quota = result.quota || latestPredictionData?.student_input?.quota || "GENERAL";
 
     branchSwapModalSubtitle.textContent = `${collegeName} (${district}) • Community: ${community}`;
     branchSwapModal.classList.remove("hidden");
