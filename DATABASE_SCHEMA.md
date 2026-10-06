@@ -1,10 +1,10 @@
 # CollegeConnect – Relational Database Architecture Specification
 ## Document: Normalized / Tall MySQL Schema Design
 **Project Context:** Academic Application Development Lab (23N511), Department of Computer Science and Engineering, PSG College of Technology  
-**Document Status:** Approved Database Schema Design Specification (Pre-DDL / Pre-Ingestion)  
-**Target RDBMS:** MySQL 8.0+ / MariaDB 10.5+ (InnoDB Storage Engine)  
+**Document Status:** Approved & Implemented Production Database Schema (Active in MySQL)  
+**Target RDBMS:** MySQL 8.4 LTS (InnoDB Storage Engine)  
 **Authoritative Dataset:** Integrated 5-Year TNEA Master Dataset (2021–2025, 16,174 offerings)  
-**Reference Document:** [PROJECT_PLAN.md](file:///c:/Users/sanja/Desktop/CollegeConnect/PROJECT_PLAN.md)  
+**Reference Document:** [PROJECT_PLAN.md](file:///c:/Users/Prakash/Desktop/CollegeConnect/PROJECT_PLAN.md)  
 
 ---
 
@@ -380,7 +380,7 @@ The following table provides the exhaustive transformation mapping from all 35 c
 | `college_name` | `string` (length $\le 202$) | `colleges` | `college_name` | Canonicalize by selecting the most recent (2025) official DoTE title; strip trailing whitespace. |
 | `district` | `string` (length $\le 15$) | `colleges` | `district` | Direct 1:1 mapping; verified 100% consistent per `college_code`. Uppercase standard. |
 | `college_type` | `string` (length $\le 41$) | `colleges` | `college_type` | Direct 1:1 mapping; verified 100% consistent per `college_code`. |
-| *(Derived)* | - | `colleges` | `institutional_tier` | Derived mapping: Premier Govt/Aided/Autonomous $\rightarrow$ `'Tier-1'`; Tier 2 SFIs $\rightarrow$ `'Tier-2'`; Tier 3 SFIs $\rightarrow$ `'Tier-3'`. |
+| *(Derived)* | - | `colleges` | `institutional_tier` | Populated via `scripts/classify_tiers.py` using 2024–2025 cutoff benchmarks & governance category: Tier-1 (69 colleges, top autonomous/govt/cutoff $\ge 180$), Tier-2 (211 colleges, cutoff $\ge 150$), Tier-3 (187 colleges, cutoff $< 150$). Exactly 0 NULL values across all 467 colleges. |
 | `branch_code` | `string` (length 2) | `branches` | `branch_code` | Cast to `VARCHAR(10)`. Deduplicate to 116 unique discipline codes. |
 | `branch_name` | `string` (length $\le 105$) | `branches` | `branch_name` | Canonicalize title casing (e.g., "Agricultural Engineering" vs "AGRICULTURAL ENGINEERING"); select standard official title. |
 
@@ -558,4 +558,6 @@ GROUP BY college_code, branch_code;
 | **8. Appropriate Indexes** | Multi-column B-Tree indexes engineered for range seeks and exact joins. | **VERIFIED** |
 | **9. Store 2021–2025 Data** | Accommodates all 16,174 offerings / 113,218 tall slots across 2021–2025. | **VERIFIED** |
 | **10. No Invented 7.5% / Special Quotas** | `quota` defaults to `'GENERAL'`; all historical records mapped strictly to `'GENERAL'`. | **VERIFIED** |
-| **Zero Execution Directives** | No database created; no data inserted; no application code modified; no SQL files created. | **VERIFIED** |
+| **11. DDL Script & Ingestion Pipeline** | Implemented in `database/schema.sql` and `scripts/load_database.py`. Loaded 467 colleges, 116 branches, 113,218 records into `tnea_db`. | **VERIFIED & ACTIVE** |
+| **12. Institutional Tier Classification** | Implemented in `scripts/classify_tiers.py`. Classified 467 colleges into Tier-1 (69), Tier-2 (211), Tier-3 (187), with 0 NULLs. | **VERIFIED & ACTIVE** |
+

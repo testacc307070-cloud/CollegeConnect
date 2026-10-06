@@ -1,6 +1,50 @@
+# Secrets and local configuration
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
 .venv/
 venv/
+env/
+
+# Editors and operating systems
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Build, test, and runtime artifacts
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+*.log
+*.tmp
+*.bak
+
+# MySQL local data directory and runtime files
+/data/mysql_data/
+*.ibd
+*.ibdata*
+*.ib_logfile*
+*.ibtmp*
+*.pid
+binlog.*
+mysql_upgrade_history
+
+# Generated test/export output
+/data/test_exported_*

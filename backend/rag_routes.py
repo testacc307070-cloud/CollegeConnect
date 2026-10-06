@@ -33,36 +33,31 @@ ALLOWED_COMMUNITIES = {
 }
 
 
-@rag_bp.route("/api/rag-explanation", methods=["GET"])
+@rag_bp.route("/api/rag-explanation", methods=["GET", "POST"])
 def rag_explanation():
     """
     Generate a grounded explanation using the same
     filtered college/branch candidates as the prediction
     workflow.
-
-    Required:
-    - cutoff_mark
-    - community
-
-    Optional:
-    - district
-    - branch_code
-    - limit
+    Supports both GET and POST requests.
     """
 
     conn = None
 
     try:
         # -------------------------------------------------
-        # Read inputs
+        # Read inputs from query parameters or JSON body
         # -------------------------------------------------
+        body = request.get_json(silent=True) or {}
 
-        cutoff_mark = request.args.get("cutoff_mark")
-        community = request.args.get("community")
-        district = request.args.get("district")
-        branch_code = request.args.get("branch_code")
+        cutoff_mark = request.args.get("cutoff_mark") if request.args.get("cutoff_mark") is not None else body.get("cutoff_mark")
+        community = request.args.get("community") or body.get("community")
+        district = request.args.get("district") or body.get("district")
+        branch_code = request.args.get("branch_code") or body.get("branch_code")
+        college_code = request.args.get("college_code") or body.get("college_code")
 
-        limit_value = request.args.get("limit", "8")
+        limit_value = request.args.get("limit") or body.get("limit") or "8"
+
 
         # -------------------------------------------------
         # Validate cutoff
@@ -176,12 +171,17 @@ def rag_explanation():
             query += " AND b.branch_code = %s"
             params.append(branch_code)
 
+        if college_code:
+            query += " AND c.college_code = %s"
+            params.append(college_code)
+
         query += """
             ORDER BY
                 c.college_code,
                 b.branch_code,
                 h.year
         """
+
 
         with conn.cursor() as cursor:
             cursor.execute(query, params)
@@ -442,13 +442,19 @@ def rag_explanation():
         # Generate grounded explanation
         # -------------------------------------------------
 
-        explanation = generate_grounded_explanation(
+        res = generate_grounded_explanation(
             cutoff_mark=cutoff_mark,
             community=community,
             retrieved_results=evidence,
             district=district,
-            branch_code=branch_code
+            branch_code=branch_code,
+            college_code=college_code,
         )
+
+        if isinstance(res, tuple):
+            explanation, model_name = res
+        else:
+            explanation, model_name = res, "Gemini"
 
         # -------------------------------------------------
         # Return RAG response
@@ -461,7 +467,8 @@ def rag_explanation():
                 "cutoff_mark": cutoff_mark,
                 "community": community,
                 "district": district,
-                "branch_code": branch_code
+                "branch_code": branch_code,
+                "college_code": college_code,
             },
 
             "retrieved_count":
@@ -471,10 +478,11 @@ def rag_explanation():
                 evidence,
 
             "generation_model":
-                "Gemini",
+                model_name,
 
             "explanation":
                 explanation,
+
 
             "note": (
                 "The explanation is generated from "

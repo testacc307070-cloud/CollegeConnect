@@ -1005,6 +1005,14 @@ def run_ingestion(
         conn.commit()
         logger.info("Database transaction committed successfully.")
 
+        # 7.6 Classify Institutional Tiers
+        try:
+            from scripts.classify_tiers import classify_and_update_tiers
+            logger.info("Classifying institutional tiers based on historical admission cutoffs...")
+            classify_and_update_tiers()
+        except Exception as tier_exc:
+            logger.warning(f"Could not classify tiers post-load: {tier_exc}")
+
         # Step 8: Print Statistics and Audit Report
         total_time = time.time() - overall_start
         print_statistics(stats, verification=verification, total_duration_sec=total_time)

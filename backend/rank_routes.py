@@ -41,9 +41,20 @@ DEFAULT_RESULT_LIMIT = 30
 MAX_RESULT_LIMIT = 30
 
 
-# ============================================================================
-# HELPERS
-# ============================================================================
+def resolve_quota(user_quota: Optional[str]) -> tuple[str, str, Optional[str]]:
+    """
+    Resolves the user selected quota. Since historical counseling data is based on
+    the primary GENERAL pool, 7.5% and special quotas query GENERAL as baseline while
+    providing tailored guidance/notes.
+    Returns (user_quota, db_quota, quota_note).
+    """
+    raw = (user_quota or "GENERAL").strip().upper()
+    if raw in ("GOVT_7_5", "7.5_GOVT", "7.5%"):
+        return raw, "GENERAL", "7.5% Government school preferential quota operates on dedicated DoTE counseling supplements; historical general cutoffs shown as reference baseline (actual 7.5% thresholds typically run 15–30 marks lower)."
+    elif raw.startswith("SPECIAL"):
+        return raw, "GENERAL", f"Special reservation quota ({raw}) operates through preliminary DoTE rounds; general cutoffs shown as baseline reference."
+    return raw, raw, None
+
 
 def safe_close(conn: Any) -> None:
 
@@ -143,22 +154,13 @@ def validate_community(
     ).strip().upper()
 
     if community not in VALID_COMMUNITIES:
-
+        allowed = ", ".join(sorted(VALID_COMMUNITIES))
         raise ValueError(
-
-            f"Invalid community '{community}'. "
-
-            f"Allowed values: "
-
-            f"{', '.join(
-                sorted(
-                    VALID_COMMUNITIES
-                )
-            )}."
-
+            f"Invalid community '{community}'. Allowed values: {allowed}."
         )
 
     return community
+
 
 
 def get_multiple_query_values(
@@ -541,14 +543,12 @@ def rank_predictions():
 
             )
 
-        quota = (
-            request.args.get(
-                "quota",
-                DEFAULT_QUOTA,
-            )
-            .strip()
-            .upper()
-        )
+        user_quota = request.args.get("quota", DEFAULT_QUOTA)
+        quota, db_quota, quota_note = resolve_quota(user_quota)
+
+        tier_filter = request.args.get("tier") or request.args.get("institutional_tier")
+        if tier_filter:
+            tier_filter = tier_filter.strip()
 
         limit = parse_limit(
 
@@ -751,7 +751,7 @@ def rank_predictions():
 
             community,
 
-            quota,
+            db_quota,
 
         ]
 
@@ -812,6 +812,19 @@ def rank_predictions():
 
             params.append(
                 college_code
+            )
+
+
+        if tier_filter and tier_filter.upper() != "ALL":
+
+            sql += """
+
+                AND c.institutional_tier = %s
+
+            """
+
+            params.append(
+                tier_filter
             )
 
 
@@ -899,7 +912,7 @@ def rank_predictions():
                     student_input,
 
                 quota=
-                    quota,
+                    db_quota,
 
             )
         )
@@ -977,6 +990,12 @@ def rank_predictions():
 
                 "quota":
                     quota,
+
+                "quota_note":
+                    quota_note,
+
+                "tier":
+                    tier_filter if (tier_filter and tier_filter.upper() != "ALL") else "ALL",
 
             },
 

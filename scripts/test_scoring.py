@@ -10,6 +10,13 @@ This test checks that Gemini returns:
 No confidence field is used.
 """
 
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from backend.scoring import generate_probability_scores
 
 
@@ -119,7 +126,7 @@ def main():
 
         print(
             "Reasoning: "
-            f"{result.get('reasoning', 'No reasoning returned')}"
+            f"{result.get('probability_reasoning') or result.get('reasoning', 'No reasoning returned')}"
         )
 
         print("-" * 60)

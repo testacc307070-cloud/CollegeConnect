@@ -1,22 +1,55 @@
 import os
+import sys
+from datetime import datetime
+from pathlib import Path
 from typing import Any, Optional
 
 import pymysql
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory, send_file
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 try:
     from backend.db import get_db_connection
     from backend.probability_service import attach_probability_scores
+    from backend.pdf_service import generate_choice_list_pdf
 except ImportError:
     from db import get_db_connection
     from probability_service import attach_probability_scores
+    from pdf_service import generate_choice_list_pdf
 
+FRONTEND_DIR = os.path.join(PROJECT_ROOT, "frontend")
 
 # ============================================================================
 # FLASK APP
 # ============================================================================
 
-app = Flask(__name__)
+app = Flask(
+    __name__,
+    static_folder=str(FRONTEND_DIR),
+    static_url_path="",
+)
+
+
+# ============================================================================
+# FRONTEND ROUTES
+# ============================================================================
+
+@app.route("/", methods=["GET"])
+def index():
+    return send_from_directory(FRONTEND_DIR, "index.html")
+
+
+@app.route("/assets/<path:filename>", methods=["GET"])
+def assets(filename):
+    return send_from_directory(FRONTEND_DIR, filename)
+
+
+@app.route("/index.html", methods=["GET"])
+def index_html():
+    return send_from_directory(FRONTEND_DIR, "index.html")
 
 
 # ============================================================================
@@ -34,6 +67,28 @@ VALID_COMMUNITIES = {
 }
 
 DEFAULT_QUOTA = "GENERAL"
+
+SUPPORTED_QUOTAS = {
+    "GENERAL": "General Academic Counseling (Baseline)",
+    "GOVT_7_5": "7.5% Government School Preferential Quota",
+    "SPECIAL_SPORTS": "Special Reservation: Sports Quota",
+    "SPECIAL_EXSERVICE": "Special Reservation: Ex-Servicemen Quota",
+    "SPECIAL_PWD": "Special Reservation: Differently Abled (PWD)",
+}
+
+def resolve_quota(user_quota: Optional[str]) -> tuple[str, str, Optional[str]]:
+    """
+    Resolves the user selected quota. Since historical counseling data is based on
+    the primary GENERAL pool, 7.5% and special quotas query GENERAL as baseline while
+    providing tailored guidance/notes.
+    Returns (user_quota, db_quota, quota_note).
+    """
+    raw = (user_quota or "GENERAL").strip().upper()
+    if raw in ("GOVT_7_5", "7.5_GOVT", "7.5%"):
+        return raw, "GENERAL", "7.5% Government school preferential quota operates on dedicated DoTE counseling supplements; historical general cutoffs shown as reference baseline (actual 7.5% thresholds typically run 15–30 marks lower)."
+    elif raw.startswith("SPECIAL"):
+        return raw, "GENERAL", f"Special reservation quota ({raw}) operates through preliminary DoTE rounds; general cutoffs shown as baseline reference."
+    return raw, raw, None
 
 DEFAULT_RESULT_LIMIT = 30
 MAX_RESULT_LIMIT = 30
@@ -747,6 +802,52 @@ def branches():
 
 
 # ============================================================================
+# INSTITUTIONAL TIERS
+# ============================================================================
+
+@app.route("/api/tiers", methods=["GET"])
+def get_tiers():
+    conn = None
+    try:
+        conn = get_db_connection()
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("""
+                SELECT institutional_tier as tier, COUNT(*) as college_count
+                FROM colleges
+                WHERE institutional_tier IS NOT NULL
+                GROUP BY institutional_tier
+                ORDER BY institutional_tier ASC;
+            """)
+            rows = cursor.fetchall()
+
+        tier_metadata = {
+            "Tier-1": "Premier Government & Autonomous Institutes (CEG, MIT, PSG Tech, CIT, SSN)",
+            "Tier-2": "Established Engineering Colleges with Solid Placements",
+            "Tier-3": "Developing and Regional Engineering Institutions"
+        }
+
+        tiers = []
+        for r in rows:
+            tiers.append({
+                "tier": r["tier"],
+                "count": r["college_count"],
+                "description": tier_metadata.get(r["tier"], "")
+            })
+
+        return jsonify({
+            "status": "ok",
+            "tiers": tiers
+        })
+    except Exception as err:
+        return jsonify({
+            "status": "error",
+            "message": str(err)
+        }), 500
+    finally:
+        safe_close(conn)
+
+
+# ============================================================================
 # COLLEGES
 # ============================================================================
 
@@ -830,6 +931,13 @@ def colleges():
             """
 
             params.extend(values)
+
+        tier_filter = request.args.get("tier") or request.args.get("institutional_tier")
+        if tier_filter and tier_filter.strip().upper() != "ALL":
+            sql += """
+                AND c.institutional_tier = %s
+            """
+            params.append(tier_filter.strip())
 
         sql += """
             ORDER BY
@@ -919,78 +1027,54 @@ def historical():
 
         )
 
-        quota = (
-            request.args.get(
-                "quota",
-                DEFAULT_QUOTA,
-            )
-            .strip()
-            .upper()
-        )
+        user_quota = request.args.get("quota", DEFAULT_QUOTA)
+        quota, db_quota, quota_note = resolve_quota(user_quota)
 
         conn = get_db_connection()
 
-        with conn.cursor(
-            pymysql.cursors.DictCursor
-        ) as cursor:
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute("""
+                SELECT 
+                    c.college_name,
+                    c.district,
+                    b.branch_name
+                FROM colleges c
+                LEFT JOIN branches b ON b.branch_code = %s
+                WHERE c.college_code = %s
+            """, (branch_code, college_code))
+            meta = cursor.fetchone() or {}
 
             cursor.execute("""
-
                 SELECT
-
                     year,
-
                     cutoff_mark,
-
                     closing_rank,
-
                     is_partial
-
                 FROM historical_admissions
-
                 WHERE college_code = %s
-
                   AND branch_code = %s
-
                   AND community = %s
-
                   AND quota = %s
-
                 ORDER BY year ASC;
-
             """, (
-
                 college_code,
-
                 branch_code,
-
                 community,
-
-                quota,
-
+                db_quota,
             ))
-
             rows = cursor.fetchall()
 
         return jsonify({
-
             "status": "ok",
-
-            "college_code":
-                college_code,
-
-            "branch_code":
-                branch_code,
-
-            "community":
-                community,
-
-            "quota":
-                quota,
-
-            "years":
-                rows,
-
+            "college_code": college_code,
+            "college_name": meta.get("college_name", f"College {college_code}"),
+            "branch_code": branch_code,
+            "branch_name": meta.get("branch_name", branch_code),
+            "district": meta.get("district", ""),
+            "community": community,
+            "quota": quota,
+            "quota_note": quota_note,
+            "years": rows,
         })
 
     except ValueError as err:
@@ -1261,14 +1345,12 @@ def predictions():
 
             )
 
-        quota = (
-            request.args.get(
-                "quota",
-                DEFAULT_QUOTA,
-            )
-            .strip()
-            .upper()
-        )
+        user_quota = request.args.get("quota", DEFAULT_QUOTA)
+        quota, db_quota, quota_note = resolve_quota(user_quota)
+
+        tier_filter = request.args.get("tier") or request.args.get("institutional_tier")
+        if tier_filter:
+            tier_filter = tier_filter.strip()
 
         limit = parse_limit(
 
@@ -1463,7 +1545,7 @@ def predictions():
 
             community,
 
-            quota,
+            db_quota,
 
         ]
 
@@ -1520,6 +1602,19 @@ def predictions():
 
             params.append(
                 college_code
+            )
+
+
+        if tier_filter and tier_filter.upper() != "ALL":
+
+            sql += """
+
+                AND c.institutional_tier = %s
+
+            """
+
+            params.append(
+                tier_filter
             )
 
 
@@ -1605,7 +1700,7 @@ def predictions():
                     student_input,
 
                 quota=
-                    quota,
+                    db_quota,
 
             )
         )
@@ -1683,6 +1778,12 @@ def predictions():
 
                 "quota":
                     quota,
+
+                "quota_note":
+                    quota_note,
+
+                "tier":
+                    tier_filter if (tier_filter and tier_filter.upper() != "ALL") else "ALL",
 
             },
 
@@ -2174,6 +2275,248 @@ def predict():
 
 
 # ============================================================================
+# CHOICE OPTIMIZER ENDPOINT
+# ============================================================================
+
+@app.route("/api/choices/optimize", methods=["GET", "POST"])
+def optimize_choices():
+    """
+    Strategically balance choice lists into:
+        20% Reach / Ambitious choices (Dream institutions)
+        50% Target choices (Realistic probability)
+        30% Safe choices (Safety net options)
+    """
+    payload = request.get_json(silent=True) or {}
+    candidates = payload.get("candidates") or payload.get("choices") or []
+
+    if not candidates:
+        return jsonify({
+            "status": "ok",
+            "strategy": "20% Reach, 50% Target, 30% Safe",
+            "count": 0,
+            "counts": {"Reach": 0, "Target": 0, "Safe": 0},
+            "optimized_choices": [],
+        })
+
+    reach = [c for c in candidates if str(c.get("tier", "")).title() == "Reach"]
+    target = [c for c in candidates if str(c.get("tier", "")).title() == "Target"]
+    safe = [c for c in candidates if str(c.get("tier", "")).title() == "Safe"]
+
+    def prob_key(item):
+        try:
+            return float(item.get("estimated_probability") or 0)
+        except (ValueError, TypeError):
+            return 0.0
+
+    reach.sort(key=prob_key, reverse=True)
+    target.sort(key=prob_key, reverse=True)
+    safe.sort(key=prob_key, reverse=True)
+
+    target_count = int(payload.get("target_count") or 15)
+    num_reach = max(1, round(target_count * 0.20))
+    num_target = max(1, round(target_count * 0.50))
+    num_safe = max(1, target_count - num_reach - num_target)
+
+    target_reach = min(len(reach), num_reach)
+    target_target = min(len(target), num_target)
+    target_safe = min(len(safe), num_safe)
+
+    selected = reach[:target_reach] + target[:target_target] + safe[:target_safe]
+    
+    # If certain categories had fewer candidates, top up from remaining pool
+    if len(selected) < min(target_count, len(candidates)):
+        seen = {f"{c.get('college_code')}::{c.get('branch_code')}" for c in selected}
+        remaining = [c for c in candidates if f"{c.get('college_code')}::{c.get('branch_code')}" not in seen]
+        remaining.sort(key=prob_key, reverse=True)
+        needed = min(target_count, len(candidates)) - len(selected)
+        selected.extend(remaining[:needed])
+
+    counts = {
+        "Reach": sum(1 for c in selected if str(c.get("tier", "")).title() == "Reach"),
+        "Target": sum(1 for c in selected if str(c.get("tier", "")).title() == "Target"),
+        "Safe": sum(1 for c in selected if str(c.get("tier", "")).title() == "Safe"),
+    }
+
+    return jsonify({
+        "status": "ok",
+        "strategy": "20% Reach, 50% Target, 30% Safe",
+        "count": len(selected),
+        "counts": counts,
+        "optimized_choices": selected,
+    })
+
+
+@app.route("/api/choices/export-pdf", methods=["POST"])
+def export_choices_pdf():
+    """
+    Generate and download a professional A4 landscape PDF of the student's choice list.
+    """
+    payload = request.get_json(silent=True) or {}
+    choices_data = payload.get("choices") or []
+    student_profile = payload.get("student_profile") or {}
+
+    if not choices_data:
+        return jsonify({
+            "status": "error",
+            "message": "At least one choice is required to generate a PDF export."
+        }), 400
+
+    try:
+        pdf_buffer = generate_choice_list_pdf(choices_data, student_profile)
+        filename = f"CollegeConnect_Choice_List_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        return send_file(
+            pdf_buffer,
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name=filename,
+        )
+    except Exception as err:
+        return jsonify({
+            "status": "error",
+            "message": f"Failed to generate PDF: {err}"
+        }), 500
+
+
+# ============================================================================
+# CAMPUS BRANCH SWAP ENDPOINT
+# ============================================================================
+
+@app.route("/api/branch-swap", methods=["GET"])
+def branch_swap():
+    """
+    Suggest alternative engineering branches within the same college campus
+    based on student cutoff mark or state rank.
+    """
+    college_code = request.args.get("college_code")
+    cutoff_mark_val = request.args.get("cutoff_mark")
+    state_rank_val = request.args.get("state_rank")
+    community = request.args.get("community", "OC").strip().upper()
+    user_quota = request.args.get("quota", "GENERAL")
+    quota, db_quota, quota_note = resolve_quota(user_quota)
+
+    if not college_code:
+        return jsonify({
+            "status": "error",
+            "message": "college_code is required"
+        }), 400
+
+    conn = get_db_connection()
+    try:
+        with conn.cursor(pymysql.cursors.DictCursor) as cursor:
+            cursor.execute(
+                "SELECT college_name, district FROM colleges WHERE college_code = %s",
+                (college_code,)
+            )
+            college_info = cursor.fetchone()
+            if not college_info:
+                return jsonify({
+                    "status": "error",
+                    "message": "College not found"
+                }), 404
+
+            cursor.execute(
+                """
+                SELECT
+                    b.branch_code,
+                    b.branch_name,
+                    COALESCE(MAX(CASE WHEN h.year = 2025 THEN h.cutoff_mark END), MAX(h.cutoff_mark)) as latest_cutoff,
+                    COALESCE(MAX(CASE WHEN h.year = 2025 THEN h.closing_rank END), MAX(h.closing_rank)) as latest_closing_rank,
+                    ROUND(AVG(h.cutoff_mark), 3) as avg_cutoff,
+                    COUNT(h.cutoff_mark) as available_years
+                FROM branches b
+                INNER JOIN historical_admissions h
+                    ON h.branch_code = b.branch_code
+                WHERE h.college_code = %s
+                  AND h.community = %s
+                  AND h.quota = %s
+                GROUP BY b.branch_code, b.branch_name
+                ORDER BY latest_cutoff DESC;
+                """,
+                (college_code, community, db_quota)
+            )
+            branch_rows = cursor.fetchall()
+
+        student_cutoff = float(cutoff_mark_val) if cutoff_mark_val else None
+        student_rank = int(state_rank_val) if state_rank_val else None
+
+        results = []
+        for row in branch_rows:
+            latest_cut = float(row["latest_cutoff"]) if row["latest_cutoff"] is not None else None
+            latest_rnk = int(row["latest_closing_rank"]) if row["latest_closing_rank"] is not None else None
+
+            tier = "Target"
+            cushion = None
+
+            if student_cutoff is not None and latest_cut is not None:
+                cushion = round(student_cutoff - latest_cut, 2)
+                if cushion >= 2.5:
+                    tier = "Safe"
+                elif cushion >= -2.0:
+                    tier = "Target"
+                else:
+                    tier = "Reach"
+            elif student_rank is not None and latest_rnk is not None:
+                cushion = latest_rnk - student_rank
+                if cushion >= 1500:
+                    tier = "Safe"
+                elif cushion >= -1000:
+                    tier = "Target"
+                else:
+                    tier = "Reach"
+
+            results.append({
+                "branch_code": row["branch_code"],
+                "branch_name": row["branch_name"],
+                "latest_cutoff": latest_cut,
+                "latest_closing_rank": latest_rnk,
+                "average_cutoff": float(row["avg_cutoff"]) if row["avg_cutoff"] is not None else None,
+                "available_years": row["available_years"],
+                "tier": tier,
+                "cushion": cushion
+            })
+
+        return jsonify({
+            "status": "ok",
+            "college_code": int(college_code),
+            "college_name": college_info["college_name"],
+            "district": college_info["district"],
+            "community": community,
+            "branches": results
+        })
+
+    finally:
+        safe_close(conn)
+
+
+# ============================================================================
+# REGISTER BLUEPRINTS
+# ============================================================================
+
+
+
+def register_all_blueprints(application):
+    blueprints_to_register = [
+        ("backend.rank_routes", "rank_bp"),
+        ("backend.matrix_routes", "matrix_bp"),
+        ("backend.rag_routes", "rag_bp"),
+        ("backend.rank_rag_routes", "rank_rag_bp"),
+        ("backend.combined_routes", "combined_bp"),
+    ]
+
+    for module_name, bp_name in blueprints_to_register:
+        try:
+            mod = __import__(module_name, fromlist=[bp_name])
+            bp = getattr(mod, bp_name)
+            if bp.name not in application.blueprints:
+                application.register_blueprint(bp)
+                print(f"[CollegeConnect] Registered blueprint: {bp.name}")
+        except Exception as exc:
+            print(f"[CollegeConnect] Warning: Could not register {module_name}.{bp_name}: {exc}")
+
+register_all_blueprints(app)
+
+
+# ============================================================================
 # MAIN
 # ============================================================================
 
@@ -2187,4 +2530,4 @@ if __name__ == "__main__":
 
         debug=True,
 
-    )
+    )

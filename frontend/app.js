@@ -53,8 +53,45 @@ const stateRankInput =
 const communitySelect =
     byId("community");
 
+const counselingQuotaSelect =
+    byId("counselingQuota");
+
+const quotaAdvisoryBanner =
+    byId("quotaAdvisoryBanner");
+
+const quotaAdvisoryTitle =
+    byId("quotaAdvisoryTitle");
+
+const quotaAdvisoryDesc =
+    byId("quotaAdvisoryDesc");
+
+const tierFilterSelect =
+    byId("tierFilter");
+
 const clearButton =
     byId("clearButton");
+
+const toggleCalcButton =
+    byId("toggleCalcButton");
+
+const calculatorPanel =
+    byId("calculatorPanel");
+
+const mathsMarksInput =
+    byId("mathsMarks");
+
+const physicsMarksInput =
+    byId("physicsMarks");
+
+const chemistryMarksInput =
+    byId("chemistryMarks");
+
+const applyCutoffButton =
+    byId("applyCutoffButton");
+
+const calcPreviewDisplay =
+    byId("calcPreviewDisplay");
+
 
 const districtSearch =
     byId("districtSearch");
@@ -160,7 +197,14 @@ const choicesContainer =
 const exportButton =
     byId("exportButton");
 
+const exportPdfButton =
+    byId("exportPdfButton");
+
+const exportDoteButton =
+    byId("exportDoteButton");
+
 const clearChoicesButton =
+
     byId("clearChoicesButton");
 
 const matrixCommunity =
@@ -171,6 +215,9 @@ const matrixDistrict =
 
 const matrixBranch =
     byId("matrixBranch");
+
+const matrixCollege =
+    byId("matrixCollege");
 
 const loadMatrixButton =
     byId("loadMatrixButton");
@@ -187,6 +234,71 @@ const matrixSection =
 const matrixTableBody =
     byId("matrixTableBody");
 
+const themeToggleBtn =
+    byId("themeToggleBtn");
+
+const themeToggleIcon =
+    byId("themeToggleIcon");
+
+const themeToggleText =
+    byId("themeToggleText");
+
+/* =========================================================
+   THEME SWITCHING (DARK / LIGHT)
+========================================================= */
+
+const THEME_STORAGE_KEY = "collegeconnect_theme";
+let currentTrendData = null;
+
+function applyTheme(theme, persist = true) {
+    const isLight = theme === "light";
+    if (isLight) {
+        document.documentElement.setAttribute("data-theme", "light");
+        if (themeToggleIcon) themeToggleIcon.textContent = "☀️";
+        if (themeToggleText) themeToggleText.textContent = "Light";
+        if (themeToggleBtn) themeToggleBtn.setAttribute("aria-label", "Switch to dark theme");
+    } else {
+        document.documentElement.removeAttribute("data-theme");
+        if (themeToggleIcon) themeToggleIcon.textContent = "🌙";
+        if (themeToggleText) themeToggleText.textContent = "Dark";
+        if (themeToggleBtn) themeToggleBtn.setAttribute("aria-label", "Switch to light theme");
+    }
+
+    if (persist) {
+        try {
+            localStorage.setItem(THEME_STORAGE_KEY, theme);
+        } catch (e) {
+            console.warn("Could not save theme preference:", e);
+        }
+    }
+
+    // Refresh dynamic lists and active modal chart if open
+    renderChoices();
+    renderAISuggestedList();
+    if (currentTrendData && trendModal && !trendModal.classList.contains("hidden")) {
+        renderTrendSvgChart(currentTrendData.rows, currentTrendData.validRecords);
+    }
+}
+
+function initTheme() {
+    let savedTheme = "dark";
+    try {
+        savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || "dark";
+    } catch (e) {
+        savedTheme = "dark";
+    }
+
+    applyTheme(savedTheme, false);
+
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener("click", () => {
+            const current = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+            const nextTheme = current === "light" ? "dark" : "light";
+            applyTheme(nextTheme, true);
+        });
+    }
+}
+
 /* =========================================================
    INITIALIZATION
 ========================================================= */
@@ -194,6 +306,8 @@ const matrixTableBody =
 document.addEventListener(
     "DOMContentLoaded",
     async () => {
+
+        initTheme();
 
         createOptimizerControls();
 
@@ -222,6 +336,8 @@ document.addEventListener(
         await loadMatrixDistricts();
 
         await loadMatrixBranches();
+
+        await loadMatrixColleges();
 
         renderChoices();
 
@@ -1687,6 +1803,31 @@ async function runPrediction(
 
         }
 
+        const quotaVal =
+            counselingQuotaSelect?.value ||
+            "GENERAL";
+
+        params.set(
+            "quota",
+            quotaVal
+        );
+
+        const tierVal =
+            tierFilterSelect?.value ||
+            "ALL";
+
+        if (
+            tierVal &&
+            tierVal !== "ALL"
+        ) {
+
+            params.set(
+                "tier",
+                tierVal
+            );
+
+        }
+
         params.set(
             "limit",
             "30"
@@ -2242,6 +2383,18 @@ function createResultCard(
 
     }
 
+    const instTier =
+        result.institutional_tier;
+
+    let instTierBadge = "";
+    if (instTier === "Tier-1") {
+        instTierBadge = `<span class="tier-inst-badge tier-inst-1" title="Premier Government / Top Autonomous Institution">🏛️ Tier-1</span>`;
+    } else if (instTier === "Tier-2") {
+        instTierBadge = `<span class="tier-inst-badge tier-inst-2" title="Established Engineering College">🏢 Tier-2</span>`;
+    } else if (instTier === "Tier-3") {
+        instTierBadge = `<span class="tier-inst-badge tier-inst-3" title="Developing / Regional Engineering College">🏫 Tier-3</span>`;
+    }
+
     card.innerHTML = `
 
         <div class="result-card-header">
@@ -2254,6 +2407,7 @@ function createResultCard(
                         result.college_name ||
                         "Unknown College"
                     )}
+                    ${instTierBadge}
 
                 </div>
 
@@ -2433,6 +2587,22 @@ function createResultCard(
                 Add to Choice Optimizer
             </button>
 
+            <button
+                class="view-trend-btn"
+                type="button"
+                title="View 5-year historical cutoff trajectory"
+            >
+                📈 5-Yr Trend
+            </button>
+
+            <button
+                class="branch-swap-btn"
+                type="button"
+                title="Discover other engineering branches in this campus"
+            >
+                🔄 Campus Branches
+            </button>
+
         </div>
 
     `;
@@ -2492,6 +2662,20 @@ function createResultCard(
 
         }
     );
+
+    const viewTrendBtn = card.querySelector(".view-trend-btn");
+    if (viewTrendBtn) {
+        viewTrendBtn.addEventListener("click", () => {
+            openTrendModal(result);
+        });
+    }
+
+    const branchSwapBtn = card.querySelector(".branch-swap-btn");
+    if (branchSwapBtn) {
+        branchSwapBtn.addEventListener("click", () => {
+            openBranchSwapModal(result);
+        });
+    }
 
     return card;
 
@@ -3212,7 +3396,7 @@ function createOptimizerControls() {
    AI SUGGESTED LIST GENERATION
 ========================================================= */
 
-function generateAISuggestedList() {
+async function generateAISuggestedList() {
 
     if (
         !Array.isArray(
@@ -3230,6 +3414,23 @@ function generateAISuggestedList() {
         return;
 
     }
+
+    try {
+        const optResponse = await fetch("/api/choices/optimize", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ candidates: latestResults })
+        });
+        const optData = await optResponse.json();
+        if (optData.status === "ok" && Array.isArray(optData.optimized_choices) && optData.optimized_choices.length > 0) {
+            aiSuggestedChoices = optData.optimized_choices.map(normalizeChoice);
+            renderAISuggestedList();
+            return;
+        }
+    } catch (optErr) {
+        // Fall through to local heuristic
+    }
+
 
     const validResults =
         latestResults
@@ -3513,6 +3714,10 @@ function createAISuggestedCard(
     card.draggable =
         true;
 
+    const isLight = document.documentElement.getAttribute("data-theme") === "light";
+
+    card.className = "ai-suggested-card";
+
     card.style.cssText = `
         display:grid;
         grid-template-columns:42px minmax(0,1fr) auto;
@@ -3520,8 +3725,8 @@ function createAISuggestedCard(
         align-items:center;
         padding:12px;
         border-radius:13px;
-        border:1px solid rgba(148,163,184,0.12);
-        background:rgba(18,26,43,0.66);
+        border:1px solid ${isLight ? '#e2e8f0' : 'rgba(148,163,184,0.12)'};
+        background:${isLight ? '#ffffff' : 'rgba(18,26,43,0.66)'};
     `;
 
     const tier =
@@ -3544,6 +3749,16 @@ function createAISuggestedCard(
             tier
         );
 
+    const numBg = isLight ? "rgba(99,102,241,0.08)" : "rgba(99,102,241,0.12)";
+    const numBorder = isLight ? "rgba(99,102,241,0.25)" : "rgba(99,102,241,0.22)";
+    const numColor = isLight ? "#4f46e5" : "#c7d2fe";
+    const titleColor = isLight ? "#0f172a" : "#f8fafc";
+    const branchColor = isLight ? "#4f46e5" : "#a5b4fc";
+    const pillBorder = isLight ? "#cbd5e1" : "rgba(148,163,184,0.14)";
+    const pillBg = isLight ? "#f1f5f9" : "rgba(148,163,184,0.04)";
+    const pillColor = isLight ? "#334155" : "#cbd5e1";
+    const pillFitColor = isLight ? "#475569" : "#94a3b8";
+
     card.innerHTML = `
 
         <div
@@ -3554,9 +3769,9 @@ function createAISuggestedCard(
                 display:flex;
                 align-items:center;
                 justify-content:center;
-                background:rgba(99,102,241,0.12);
-                border:1px solid rgba(99,102,241,0.22);
-                color:#c7d2fe;
+                background:${numBg};
+                border:1px solid ${numBorder};
+                color:${numColor};
                 font-family:var(--font-mono, monospace);
                 font-weight:900;
                 font-size:0.76rem;
@@ -3581,7 +3796,7 @@ function createAISuggestedCard(
 
             <div
                 style="
-                    color:#f8fafc;
+                    color:${titleColor};
                     font-size:0.84rem;
                     font-weight:900;
                     line-height:1.35;
@@ -3597,7 +3812,7 @@ function createAISuggestedCard(
 
             <div
                 style="
-                    color:#a5b4fc;
+                    color:${branchColor};
                     font-size:0.76rem;
                     font-weight:700;
                     margin-top:3px;
@@ -3648,9 +3863,9 @@ function createAISuggestedCard(
                         font-size:0.66rem;
                         padding:3px 7px;
                         border-radius:999px;
-                        border:1px solid rgba(148,163,184,0.14);
-                        background:rgba(148,163,184,0.04);
-                        color:#cbd5e1;
+                        border:1px solid ${pillBorder};
+                        background:${pillBg};
+                        color:${pillColor};
                         font-weight:800;
                     "
                 >
@@ -3667,9 +3882,9 @@ function createAISuggestedCard(
                         font-size:0.66rem;
                         padding:3px 7px;
                         border-radius:999px;
-                        border:1px solid rgba(148,163,184,0.14);
-                        background:rgba(148,163,184,0.04);
-                        color:#94a3b8;
+                        border:1px solid ${pillBorder};
+                        background:${pillBg};
+                        color:${pillFitColor};
                         font-weight:800;
                     "
                 >
@@ -3688,9 +3903,9 @@ function createAISuggestedCard(
                         font-size:0.66rem;
                         padding:3px 7px;
                         border-radius:999px;
-                        border:1px solid rgba(148,163,184,0.14);
-                        background:rgba(148,163,184,0.04);
-                        color:#94a3b8;
+                        border:1px solid ${pillBorder};
+                        background:${pillBg};
+                        color:${pillFitColor};
                         font-weight:800;
                     "
                 >
@@ -5069,6 +5284,133 @@ exportButton?.addEventListener(
     () => {
 
         if (
+            choices.length === 0
+        ) {
+            alert("There are no choices to export. Please add college–branch choices first.");
+            return;
+        }
+
+        const headers = [
+            "Preference",
+            "College Code",
+            "College Name",
+            "Branch Code",
+            "Branch Name",
+            "District",
+            "Latest Cutoff (2025)",
+            "Latest Closing Rank (2025)",
+            "Feasibility Tier",
+            "Estimated Probability (%)",
+            "Historical Fit Score (%)",
+            "Strategy Reasoning"
+        ];
+
+        const rows = choices.map((choice, index) => [
+            index + 1,
+            choice.college_code ?? "",
+            choice.college_name ?? "",
+            choice.branch_code ?? "",
+            choice.branch_name ?? "",
+            choice.district ?? "",
+            choice.latest_cutoff !== null && choice.latest_cutoff !== undefined ? Number(choice.latest_cutoff).toFixed(2) : "",
+            choice.latest_closing_rank ?? "",
+            choice.tier ?? "Target",
+            choice.estimated_probability !== null && choice.estimated_probability !== undefined ? `${Number(choice.estimated_probability).toFixed(1)}%` : "",
+            choice.historical_fit_score !== null && choice.historical_fit_score !== undefined ? `${Number(choice.historical_fit_score).toFixed(1)}%` : "",
+            choice.probability_reasoning ?? ""
+        ]);
+
+        const csvString = [headers, ...rows]
+            .map(row => row.map(csvEscape).join(","))
+            .join("\r\n");
+
+        // UTF-8 BOM (\uFEFF) ensures Excel and Google Sheets render Unicode and special characters perfectly
+        const blob = new Blob(
+            ["\uFEFF" + csvString],
+            { type: "text/csv;charset=utf-8;" }
+        );
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        const dateStr = new Date().toISOString().slice(0, 10);
+        link.download = `collegeconnect_choice_list_${dateStr}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+    }
+);
+
+/* =========================================================
+   EXPORT PDF
+========================================================= */
+
+exportPdfButton?.addEventListener(
+    "click",
+    async () => {
+
+        if (
+            choices.length === 0
+        ) {
+            alert("There are no choices to export. Please add college–branch choices first.");
+            return;
+        }
+
+        const originalText = exportPdfButton.textContent;
+        exportPdfButton.textContent = "Generating PDF...";
+        exportPdfButton.disabled = true;
+
+        try {
+            const studentProfile = {
+                cutoff_mark: cutoffInput?.value ? parseFloat(cutoffInput.value) : (latestPredictionData?.student_input?.cutoff_mark || null),
+                state_rank: stateRankInput?.value ? parseInt(stateRankInput.value, 10) : (latestPredictionData?.student_input?.state_rank || null),
+                community: latestPredictionData?.student_input?.community || communitySelect?.value || "OC",
+                quota: latestPredictionData?.student_input?.quota || counselingQuotaSelect?.value || "GENERAL"
+            };
+
+            const response = await fetch("/api/choices/export-pdf", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    choices: choices,
+                    student_profile: studentProfile
+                })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.message || `PDF export failed (HTTP ${response.status})`);
+            }
+
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            const dateStr = new Date().toISOString().slice(0, 10);
+            link.download = `CollegeConnect_Choice_List_${dateStr}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+
+        } catch (err) {
+            console.error("PDF export error:", err);
+            alert(`Failed to export PDF: ${err.message}`);
+        } finally {
+            exportPdfButton.textContent = originalText;
+            exportPdfButton.disabled = false;
+        }
+    }
+);
+
+exportDoteButton?.addEventListener(
+    "click",
+    () => {
+
+        if (
             choices.length ===
             0
         ) {
@@ -5081,128 +5423,56 @@ exportButton?.addEventListener(
 
         }
 
-        const headers = [
+        let text = "======================================================================\n";
+        text += "TAMIL NADU ENGINEERING ADMISSIONS (TNEA) - COUNSELING CHOICE LIST\n";
+        text += "Generated by CollegeConnect (Verified Historical Reference)\n";
+        text += "======================================================================\n";
+        text += `Total Selected Choices: ${choices.length}\n\n`;
 
-            "Preference",
+        text += "CHOICE PREFERENCE ORDER:\n";
+        choices.forEach((choice, index) => {
+            const code = choice.college_code || "—";
+            const name = choice.college_name || "—";
+            const branchCode = choice.branch_code || "—";
+            const branchName = choice.branch_name || "—";
+            const tier = choice.tier || "Target";
+            text += `[Choice ${index + 1}] Code: ${code} | ${name}\n`;
+            text += `          Branch: ${branchCode} (${branchName}) [Tier: ${tier}]\n\n`;
+        });
 
-            "College Code",
+        text += "======================================================================\n";
+        text += "FORMAT FOR DOTE PORTAL ENTRY (tneaonline.org):\n";
+        text += "Choice_No\tCollege_Code\tBranch_Code\n";
+        choices.forEach((choice, index) => {
+            text += `${index + 1}\t\t${choice.college_code}\t\t${choice.branch_code}\n`;
+        });
+        text += "======================================================================\n";
 
-            "College",
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Choice list successfully copied to clipboard in official DoTE format!\n\nYou can now paste it directly into your notes or counseling application.");
+            }).catch(() => {
+                downloadTextFile(text);
+            });
+        } else {
+            downloadTextFile(text);
+        }
 
-            "Branch Code",
-
-            "Branch",
-
-            "District",
-
-            "Latest Cutoff",
-
-            "Latest Closing Rank",
-
-            "Historical Fit Score",
-
-            "Estimated Probability",
-
-            "Tier",
-
-            "Probability Reasoning"
-
-        ];
-
-        const rows =
-            choices.map(
-                (
-                    choice,
-                    index
-                ) => [
-
-                    index + 1,
-
-                    choice.college_code,
-
-                    choice.college_name,
-
-                    choice.branch_code,
-
-                    choice.branch_name,
-
-                    choice.district,
-
-                    choice.latest_cutoff,
-
-                    choice.latest_closing_rank,
-
-                    choice.historical_fit_score,
-
-                    choice.estimated_probability,
-
-                    choice.tier,
-
-                    choice.probability_reasoning
-
-                ]
-            );
-
-        const csv =
-            [
-                headers,
-                ...rows
-            ]
-                .map(
-                    row =>
-                        row
-                            .map(
-                                csvEscape
-                            )
-                            .join(
-                                ","
-                            )
-                )
-                .join(
-                    "\n"
-                );
-
-        const blob =
-            new Blob(
-                [
-                    csv
-                ],
-                {
-                    type:
-                        "text/csv;charset=utf-8;"
-                }
-            );
-
-        const url =
-            URL.createObjectURL(
-                blob
-            );
-
-        const link =
-            document.createElement(
-                "a"
-            );
-
-        link.href =
-            url;
-
-        link.download =
-            "collegeconnect_choice_list.csv";
-
-        document.body.appendChild(
-            link
-        );
-
-        link.click();
-
-        link.remove();
-
-        URL.revokeObjectURL(
-            url
-        );
+        function downloadTextFile(content) {
+            const blob = new Blob([content], { type: "text/plain;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "collegeconnect_dote_choices.txt";
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+        }
 
     }
 );
+
 
 function csvEscape(
     value
@@ -5381,11 +5651,113 @@ async function loadMatrixBranches() {
 
 }
 
+async function loadMatrixColleges() {
+
+    try {
+
+        const params =
+            new URLSearchParams();
+
+        if (
+            matrixDistrict &&
+            matrixDistrict.value
+        ) {
+
+            params.set(
+                "district",
+                matrixDistrict.value
+            );
+
+        }
+
+        if (
+            matrixBranch &&
+            matrixBranch.value
+        ) {
+
+            params.set(
+                "branch_code",
+                matrixBranch.value
+            );
+
+        }
+
+        const query =
+            params.toString();
+
+        const url =
+            query
+                ? `/api/colleges?${query}`
+                : "/api/colleges";
+
+        const response =
+            await fetch(
+                url
+            );
+
+        const data =
+            await response.json();
+
+        if (
+            !response.ok ||
+            data.status !== "ok" ||
+            !matrixCollege
+        ) {
+
+            return;
+
+        }
+
+        matrixCollege.innerHTML = `
+            <option value="">
+                All colleges
+            </option>
+        `;
+
+        data.colleges.forEach(
+            college => {
+
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+                option.value =
+                    college.college_code;
+
+                option.textContent =
+                    `${college.college_code} - ${college.college_name}`;
+
+                matrixCollege.appendChild(
+                    option
+                );
+
+            }
+        );
+
+    } catch {
+
+        // Ignore initial matrix errors.
+
+    }
+
+}
+
 matrixDistrict?.addEventListener(
     "change",
     async () => {
 
         await loadMatrixBranches();
+        await loadMatrixColleges();
+
+    }
+);
+
+matrixBranch?.addEventListener(
+    "change",
+    async () => {
+
+        await loadMatrixColleges();
 
     }
 );
@@ -5440,6 +5812,18 @@ loadMatrixButton?.addEventListener(
                 params.set(
                     "branch_code",
                     matrixBranch.value
+                );
+
+            }
+
+            if (
+                matrixCollege &&
+                matrixCollege.value
+            ) {
+
+                params.set(
+                    "college_code",
+                    matrixCollege.value
                 );
 
             }
@@ -5692,14 +6076,121 @@ clearButton?.addEventListener(
             "hidden"
         );
 
+        if (mathsMarksInput) mathsMarksInput.value = "";
+        if (physicsMarksInput) physicsMarksInput.value = "";
+        if (chemistryMarksInput) chemistryMarksInput.value = "";
+        if (calcPreviewDisplay) calcPreviewDisplay.textContent = "Cutoff: — / 200";
+
         hideError();
 
         hideRagError();
+
+        if (counselingQuotaSelect) {
+            counselingQuotaSelect.value = "GENERAL";
+        }
+
+        if (quotaAdvisoryBanner) {
+            quotaAdvisoryBanner.classList.add("hidden");
+        }
+
+        if (tierFilterSelect) {
+            tierFilterSelect.value = "ALL";
+        }
 
         renderAISuggestedList();
 
     }
 );
+
+/* =========================================================
+   COUNSELING QUOTA SELECTION & ADVISORY
+========================================================= */
+
+counselingQuotaSelect?.addEventListener("change", () => {
+    const val = counselingQuotaSelect.value;
+    if (!quotaAdvisoryBanner) return;
+
+    if (val === "GENERAL") {
+        quotaAdvisoryBanner.classList.add("hidden");
+    } else if (val === "GOVT_7_5") {
+        if (quotaAdvisoryTitle) quotaAdvisoryTitle.textContent = "7.5% Government School Preferential Quota";
+        if (quotaAdvisoryDesc) quotaAdvisoryDesc.textContent = "In Tamil Nadu TNEA counseling, Government school students (7.5% reservation) participate in dedicated preliminary counseling rounds administered directly by DoTE. Historical cutoffs displayed below represent General Academic benchmarks; for the 7.5% quota, closing cutoffs typically operate 15–30 marks lower at premier Tier-1/Tier-2 colleges. Use these results as a reliable reference baseline.";
+        quotaAdvisoryBanner.classList.remove("hidden");
+    } else if (val === "SPECIAL_SPORTS") {
+        if (quotaAdvisoryTitle) quotaAdvisoryTitle.textContent = "Special Reservation: Sports Quota";
+        if (quotaAdvisoryDesc) quotaAdvisoryDesc.textContent = "Sports quota seats (500 seats allocated by DoTE) are allotted through in-person certificate verification and dedicated sports counseling rounds before general academic rounds. General cutoffs represent a quality and prestige benchmark.";
+        quotaAdvisoryBanner.classList.remove("hidden");
+    } else if (val === "SPECIAL_EXSERVICE") {
+        if (quotaAdvisoryTitle) quotaAdvisoryTitle.textContent = "Special Reservation: Ex-Servicemen Quota";
+        if (quotaAdvisoryDesc) quotaAdvisoryDesc.textContent = "Wards of Ex-Servicemen receive special preliminary allotment by DoTE prior to general rounds. General cutoffs reflect academic standards across institutions.";
+        quotaAdvisoryBanner.classList.remove("hidden");
+    } else if (val === "SPECIAL_PWD") {
+        if (quotaAdvisoryTitle) quotaAdvisoryTitle.textContent = "Special Reservation: Differently Abled (PWD)";
+        if (quotaAdvisoryDesc) quotaAdvisoryDesc.textContent = "Differently Abled (PWD) reservation is conducted through dedicated medical board verification and early priority allotment. General cutoffs reflect standard baseline thresholds.";
+        quotaAdvisoryBanner.classList.remove("hidden");
+    }
+});
+
+/* =========================================================
+   CLASS 12 CUTOFF CALCULATOR
+========================================================= */
+
+function calculateCutoffFromMarks() {
+    const m = parseFloat(mathsMarksInput?.value);
+    const p = parseFloat(physicsMarksInput?.value);
+    const c = parseFloat(chemistryMarksInput?.value);
+
+    if (isNaN(m) || isNaN(p) || isNaN(c)) {
+        if (calcPreviewDisplay) {
+            calcPreviewDisplay.textContent = "Cutoff: — / 200";
+        }
+        return null;
+    }
+
+    if (m < 0 || m > 100 || p < 0 || p > 100 || c < 0 || c > 100) {
+        if (calcPreviewDisplay) {
+            calcPreviewDisplay.textContent = "Marks: 0 to 100";
+        }
+        return null;
+    }
+
+    const cutoff = m + (p / 2.0) + (c / 2.0);
+    const rounded = Math.round(cutoff * 1000) / 1000;
+    if (calcPreviewDisplay) {
+        calcPreviewDisplay.textContent = `Cutoff: ${rounded.toFixed(2)} / 200`;
+    }
+    return rounded;
+}
+
+toggleCalcButton?.addEventListener("click", () => {
+    calculatorPanel?.classList.toggle("hidden");
+    if (!calculatorPanel?.classList.contains("hidden")) {
+        toggleCalcButton.textContent = "Close Calculator";
+        mathsMarksInput?.focus();
+    } else {
+        toggleCalcButton.textContent = "Calculate from Marks";
+    }
+});
+
+[mathsMarksInput, physicsMarksInput, chemistryMarksInput].forEach(inp => {
+    inp?.addEventListener("input", calculateCutoffFromMarks);
+});
+
+applyCutoffButton?.addEventListener("click", () => {
+    const cutoff = calculateCutoffFromMarks();
+    if (cutoff !== null) {
+        cutoffInput.value = cutoff.toFixed(2);
+        stateRankInput.value = "";
+        calculatorPanel?.classList.add("hidden");
+        if (toggleCalcButton) {
+            toggleCalcButton.textContent = "Calculate from Marks";
+        }
+        hideError();
+    } else {
+        alert("Please enter valid marks (0–100) for Maths, Physics, and Chemistry.");
+    }
+});
+
 
 /* =========================================================
    UI HELPERS
@@ -5843,6 +6334,8 @@ function getTierColor(
     tier
 ) {
 
+    const isLight = document.documentElement.getAttribute("data-theme") === "light";
+
     if (
         tier ===
         "Safe"
@@ -5851,13 +6344,13 @@ function getTierColor(
         return {
 
             border:
-                "rgba(16,185,129,0.22)",
+                isLight ? "rgba(5, 150, 105, 0.45)" : "rgba(16,185,129,0.22)",
 
             background:
-                "rgba(16,185,129,0.10)",
+                isLight ? "#ecfdf5" : "rgba(16,185,129,0.10)",
 
             text:
-                "#10b981"
+                isLight ? "#047857" : "#10b981"
 
         };
 
@@ -5871,13 +6364,13 @@ function getTierColor(
         return {
 
             border:
-                "rgba(239,68,68,0.22)",
+                isLight ? "rgba(225, 29, 72, 0.40)" : "rgba(239,68,68,0.22)",
 
             background:
-                "rgba(239,68,68,0.10)",
+                isLight ? "#fff1f2" : "rgba(239,68,68,0.10)",
 
             text:
-                "#ef4444"
+                isLight ? "#be123c" : "#ef4444"
 
         };
 
@@ -5886,13 +6379,13 @@ function getTierColor(
     return {
 
         border:
-            "rgba(245,158,11,0.22)",
+            isLight ? "rgba(217, 119, 6, 0.45)" : "rgba(245,158,11,0.22)",
 
         background:
-            "rgba(245,158,11,0.10)",
+            isLight ? "#fffbeb" : "rgba(245,158,11,0.10)",
 
         text:
-            "#f59e0b"
+            isLight ? "#b45309" : "#f59e0b"
 
     };
 
@@ -5952,4 +6445,488 @@ function escapeHtml(
             "&#039;"
         );
 
+}
+
+/* =========================================================
+   HISTORICAL 5-YEAR TREND & BRANCH SWAP MODALS
+========================================================= */
+
+const trendModal = document.getElementById("trendModal");
+const trendModalTitle = document.getElementById("trendModalTitle");
+const trendModalSubtitle = document.getElementById("trendModalSubtitle");
+const trendModalClose = document.getElementById("trendModalClose");
+const trendModalLoading = document.getElementById("trendModalLoading");
+const trendModalContent = document.getElementById("trendModalContent");
+const trendLegendText = document.getElementById("trendLegendText");
+const trendChartSvgContainer = document.getElementById("trendChartSvgContainer");
+const trendMetricsCard = document.getElementById("trendMetricsCard");
+const trendTableBody = document.getElementById("trendTableBody");
+
+const branchSwapModal = document.getElementById("branchSwapModal");
+const branchSwapModalTitle = document.getElementById("branchSwapModalTitle");
+const branchSwapModalSubtitle = document.getElementById("branchSwapModalSubtitle");
+const branchSwapModalClose = document.getElementById("branchSwapModalClose");
+const branchSwapModalLoading = document.getElementById("branchSwapModalLoading");
+const branchSwapModalContent = document.getElementById("branchSwapModalContent");
+const branchSwapTableBody = document.getElementById("branchSwapTableBody");
+
+function closeTrendModal() {
+    if (trendModal) {
+        trendModal.classList.add("hidden");
+    }
+}
+
+function closeBranchSwapModal() {
+    if (branchSwapModal) {
+        branchSwapModal.classList.add("hidden");
+    }
+}
+
+if (trendModalClose) {
+    trendModalClose.addEventListener("click", closeTrendModal);
+}
+
+if (branchSwapModalClose) {
+    branchSwapModalClose.addEventListener("click", closeBranchSwapModal);
+}
+
+// Close on backdrop click
+[trendModal, branchSwapModal].forEach(modalEl => {
+    if (modalEl) {
+        modalEl.addEventListener("click", (evt) => {
+            if (evt.target === modalEl) {
+                modalEl.classList.add("hidden");
+            }
+        });
+    }
+});
+
+// Close on ESC key
+window.addEventListener("keydown", (evt) => {
+    if (evt.key === "Escape") {
+        closeTrendModal();
+        closeBranchSwapModal();
+    }
+});
+
+async function openTrendModal(result) {
+    if (!trendModal) return;
+
+    const collegeName = result.college_name || `College ${result.college_code}`;
+    const branchCode = result.branch_code || "";
+    const community = result.community || latestPredictionData?.student_input?.community || communitySelect?.value || "OC";
+    const quota = result.quota || latestPredictionData?.student_input?.quota || counselingQuotaSelect?.value || "GENERAL";
+
+    // Format title exactly like reference screenshot: "College Name (BranchCode)"
+    trendModalTitle.textContent = `${collegeName} (${branchCode})`;
+    if (trendLegendText) {
+        trendLegendText.textContent = `Closing Cutoff Score (${community})`;
+    }
+
+    trendModal.classList.remove("hidden");
+    trendModalLoading.classList.remove("hidden");
+    trendModalContent.classList.add("hidden");
+
+    try {
+        const params = new URLSearchParams({
+            college_code: result.college_code,
+            branch_code: result.branch_code,
+            community: community,
+            quota: quota
+        });
+
+        const resp = await fetch(`/api/historical?${params.toString()}`);
+        if (!resp.ok) {
+            throw new Error(`Failed to load historical data (HTTP ${resp.status})`);
+        }
+
+        const data = await resp.json();
+        if (data.status !== "ok" || !data.years || data.years.length === 0) {
+            trendModalLoading.classList.add("hidden");
+            trendModalContent.classList.remove("hidden");
+            if (trendMetricsCard) {
+                trendMetricsCard.innerHTML = `<div style="grid-column: 1/-1; color: #94a3b8; padding: 12px;">No historical cutoff records found for ${escapeHtml(community)} category in ${escapeHtml(quota)} quota.</div>`;
+            }
+            if (trendChartSvgContainer) {
+                trendChartSvgContainer.innerHTML = "";
+            }
+            if (trendTableBody) {
+                trendTableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#94a3b8; padding:20px;">No admission data available.</td></tr>`;
+            }
+            return;
+        }
+
+        const rows = data.years.sort((a, b) => Number(a.year) - Number(b.year));
+        const validRecords = rows.filter(
+            r => r.cutoff_mark !== null && r.cutoff_mark !== undefined && !isNaN(Number(r.cutoff_mark))
+        );
+        const validCutoffs = validRecords.map(r => Number(r.cutoff_mark));
+
+        // 1. 5-YR AVG CUTOFF
+        const avgCutoff = validCutoffs.length
+            ? (validCutoffs.reduce((a, b) => a + b, 0) / validCutoffs.length).toFixed(2)
+            : "—";
+
+        // 2. PEAK CUTOFF
+        const peakCutoff = validCutoffs.length
+            ? Math.max(...validCutoffs).toFixed(2)
+            : "—";
+
+        // 3. 5-YR SCORE SHIFT
+        let shiftFormatted = "0.00";
+        let shiftClass = "val-shift-neutral";
+        let shiftVal = 0;
+        if (validCutoffs.length >= 2) {
+            const firstCut = validCutoffs[0];
+            const lastCut = validCutoffs[validCutoffs.length - 1];
+            shiftVal = lastCut - firstCut;
+            shiftFormatted = shiftVal > 0 ? `+${shiftVal.toFixed(2)}` : shiftVal.toFixed(2);
+            shiftClass = shiftVal > 0 ? "val-shift-pos" : (shiftVal < 0 ? "val-shift-neg" : "val-shift-neutral");
+        } else if (validCutoffs.length === 1) {
+            shiftFormatted = "0.00";
+        }
+
+        // 4. DEMAND TRAJECTORY
+        let trajectory = "Stable Demand";
+        if (validCutoffs.length >= 2) {
+            if (Number(peakCutoff) >= 199.0 || Math.abs(shiftVal) <= 0.75) {
+                trajectory = "Stable Demand";
+            } else if (shiftVal > 0.75) {
+                trajectory = "Surging Demand";
+            } else if (shiftVal < -0.75) {
+                trajectory = "Easing Cutoff";
+            }
+        } else {
+            trajectory = "Emerging Branch";
+        }
+
+        // Render 4-Column Summary Card matching reference screenshot
+        if (trendMetricsCard) {
+            trendMetricsCard.innerHTML = `
+                <div class="trend-metric-item">
+                    <span class="trend-metric-label">5-YR AVG CUTOFF</span>
+                    <span class="trend-metric-val val-avg">${avgCutoff}</span>
+                </div>
+                <div class="trend-metric-item">
+                    <span class="trend-metric-label">PEAK CUTOFF</span>
+                    <span class="trend-metric-val val-peak">${peakCutoff}</span>
+                </div>
+                <div class="trend-metric-item">
+                    <span class="trend-metric-label">5-YR SCORE SHIFT</span>
+                    <span class="trend-metric-val ${shiftClass}">${shiftFormatted}</span>
+                </div>
+                <div class="trend-metric-item">
+                    <span class="trend-metric-label">DEMAND TRAJECTORY</span>
+                    <span class="trend-metric-val val-trajectory">${trajectory}</span>
+                </div>
+            `;
+        }
+
+        // Render Spline SVG Chart
+        currentTrendData = { rows, validRecords };
+        renderTrendSvgChart(rows, validRecords);
+
+        // Populate detailed table
+        if (trendTableBody) {
+            const isLight = document.documentElement.getAttribute("data-theme") === "light";
+            trendTableBody.innerHTML = rows.map(r => {
+                const cut = r.cutoff_mark !== null && r.cutoff_mark !== undefined ? Number(r.cutoff_mark).toFixed(2) : "Not Allotted";
+                const rank = r.closing_rank ? Number(r.closing_rank).toLocaleString() : "—";
+                const completeness = r.is_partial
+                    ? `<span style="color:#f59e0b; font-size:0.75rem;">⚠ Partial</span>`
+                    : `<span style="color:#10b981; font-size:0.75rem;">✓ Full</span>`;
+                return `
+                    <tr>
+                        <td><strong>${escapeHtml(r.year)}</strong></td>
+                        <td style="color:${isLight ? '#4f46e5' : '#818cf8'}; font-weight:700;">${cut}</td>
+                        <td>${rank}</td>
+                        <td>${completeness}</td>
+                    </tr>
+                `;
+            }).join("");
+        }
+
+        trendModalLoading.classList.add("hidden");
+        trendModalContent.classList.remove("hidden");
+
+    } catch (err) {
+        console.error("Error opening trend modal:", err);
+        trendModalLoading.classList.add("hidden");
+        trendModalContent.classList.remove("hidden");
+        if (trendMetricsCard) {
+            trendMetricsCard.innerHTML = `<div style="grid-column: 1/-1; color: #ef4444; padding: 12px;">Error loading data: ${escapeHtml(err.message)}</div>`;
+        }
+        if (trendChartSvgContainer) {
+            trendChartSvgContainer.innerHTML = "";
+        }
+    }
+}
+
+function renderTrendSvgChart(rows, validRecords) {
+    if (!trendChartSvgContainer) return;
+
+    const isLight = document.documentElement.getAttribute("data-theme") === "light";
+
+    if (!validRecords.length) {
+        trendChartSvgContainer.innerHTML = `<div style="text-align:center; color:${isLight ? '#64748b' : '#94a3b8'}; padding-top:90px; font-size:0.88rem;">No cutoff data available to plot chart.</div>`;
+        return;
+    }
+
+    const width = 680;
+    const height = 240;
+    const padLeft = 60;
+    const padRight = 35;
+    const padTop = 20;
+    const padBottom = 35;
+
+    const plotW = width - padLeft - padRight;
+    const plotH = height - padTop - padBottom;
+
+    const validCutoffs = validRecords.map(r => Number(r.cutoff_mark));
+    const minVal = Math.min(...validCutoffs);
+    const maxVal = Math.max(...validCutoffs);
+    const span = maxVal - minVal;
+
+    let step = 0.5;
+    if (span > 30) step = 5.0;
+    else if (span > 15) step = 2.5;
+    else if (span > 7) step = 1.0;
+    else step = 0.5;
+
+    let yMin = Math.floor(minVal / step) * step;
+    let yMax = Math.ceil(maxVal / step) * step;
+
+    if (yMax === yMin) {
+        yMax = Math.min(200, yMax + step * 2);
+        yMin = Math.max(0, yMin - step * 2);
+    } else {
+        yMin = Math.max(0, yMin - step);
+        yMax = Math.min(200, yMax + step);
+    }
+
+    const valToY = (val) => {
+        const ratio = (val - yMin) / (yMax - yMin);
+        return padTop + plotH - (ratio * plotH);
+    };
+
+    const gridStroke = isLight ? "#e2e8f0" : "rgba(255,255,255,0.06)";
+    const yLabelFill = isLight ? "#475569" : "#64748b";
+    const xLabelFill = isLight ? "#475569" : "#94a3b8";
+    const curveStroke = isLight ? "#4f46e5" : "#818cf8";
+    const markerStroke = isLight ? "#4f46e5" : "#818cf8";
+    const gradientOpacity = isLight ? "0.16" : "0.30";
+
+    // Horizontal grid lines and Y-axis labels
+    let gridLinesSvg = "";
+    let yLabelsSvg = "";
+    const totalTicks = Math.round((yMax - yMin) / step);
+    for (let i = 0; i <= totalTicks; i++) {
+        const tickVal = yMax - (i * step);
+        if (tickVal < yMin - 1e-6) break;
+        const yPos = valToY(tickVal);
+        gridLinesSvg += `<line x1="${padLeft}" y1="${yPos.toFixed(1)}" x2="${padLeft + plotW}" y2="${yPos.toFixed(1)}" stroke="${gridStroke}" />`;
+        yLabelsSvg += `<text x="${padLeft - 12}" y="${(yPos + 4).toFixed(1)}" fill="${yLabelFill}" font-size="11" font-weight="500" text-anchor="end">${tickVal.toFixed(1)}</text>`;
+    }
+
+    // X-axis labels: 2021 Counseling ... 2025 Counseling
+    const allYears = [2021, 2022, 2023, 2024, 2025];
+    let xLabelsSvg = "";
+    allYears.forEach((yr, idx) => {
+        const xPos = padLeft + (idx / (allYears.length - 1)) * plotW;
+        xLabelsSvg += `<text x="${xPos.toFixed(1)}" y="${height - 10}" fill="${xLabelFill}" font-size="11" text-anchor="middle" font-weight="500">${yr} Counseling</text>`;
+    });
+
+    // Map existing points
+    const points = [];
+    allYears.forEach((yr, idx) => {
+        const rec = validRecords.find(r => Number(r.year) === yr);
+        if (rec) {
+            const x = padLeft + (idx / (allYears.length - 1)) * plotW;
+            const y = valToY(Number(rec.cutoff_mark));
+            points.push({
+                year: yr,
+                cutoff: Number(rec.cutoff_mark),
+                rank: rec.closing_rank,
+                x,
+                y
+            });
+        }
+    });
+
+    let pathD = "";
+    let areaD = "";
+    let circlesSvg = "";
+
+    // Smooth cubic spline curve (Catmull-Rom cubic Bezier)
+    if (points.length === 1) {
+        pathD = `M ${padLeft} ${points[0].y.toFixed(1)} L ${padLeft + plotW} ${points[0].y.toFixed(1)}`;
+        areaD = `${pathD} L ${padLeft + plotW} ${(padTop + plotH).toFixed(1)} L ${padLeft} ${(padTop + plotH).toFixed(1)} Z`;
+    } else if (points.length > 1) {
+        pathD = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
+        for (let i = 0; i < points.length - 1; i++) {
+            const p0 = i > 0 ? points[i - 1] : points[i];
+            const p1 = points[i];
+            const p2 = points[i + 1];
+            const p3 = i < points.length - 2 ? points[i + 2] : p2;
+
+            const cp1x = p1.x + (p2.x - p0.x) / 6;
+            const cp1y = p1.y + (p2.y - p0.y) / 6;
+            const cp2x = p2.x - (p3.x - p1.x) / 6;
+            const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+            pathD += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+        }
+        areaD = `${pathD} L ${points[points.length - 1].x.toFixed(1)} ${(padTop + plotH).toFixed(1)} L ${points[0].x.toFixed(1)} ${(padTop + plotH).toFixed(1)} Z`;
+    }
+
+    // Glowing circular points with purple/indigo stroke
+    points.forEach(pt => {
+        const rankStr = pt.rank ? ` • Closing Rank: ${Number(pt.rank).toLocaleString()}` : '';
+        circlesSvg += `
+            <circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="5.5" fill="#ffffff" stroke="${markerStroke}" stroke-width="3">
+                <title>${pt.year} Counseling: ${pt.cutoff.toFixed(2)}${rankStr}</title>
+            </circle>
+        `;
+    });
+
+    trendChartSvgContainer.innerHTML = `
+        <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet">
+            <defs>
+                <linearGradient id="trendGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#6366f1" stop-opacity="${gradientOpacity}" />
+                    <stop offset="100%" stop-color="#6366f1" stop-opacity="0.0" />
+                </linearGradient>
+            </defs>
+            ${gridLinesSvg}
+            ${yLabelsSvg}
+            ${xLabelsSvg}
+            ${areaD ? `<path d="${areaD}" fill="url(#trendGradient)" />` : ""}
+            ${pathD ? `<path d="${pathD}" fill="none" stroke="${curveStroke}" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />` : ""}
+            ${circlesSvg}
+        </svg>
+    `;
+}
+
+async function openBranchSwapModal(result) {
+    if (!branchSwapModal) return;
+
+    const collegeName = result.college_name || `College ${result.college_code}`;
+    const district = result.district || "";
+    const community = result.community || latestPredictionData?.student_input?.community || communitySelect?.value || "OC";
+    const quota = result.quota || latestPredictionData?.student_input?.quota || counselingQuotaSelect?.value || "GENERAL";
+
+    branchSwapModalSubtitle.textContent = `${collegeName} (${district}) • Community: ${community}`;
+    branchSwapModal.classList.remove("hidden");
+    branchSwapModalLoading.classList.remove("hidden");
+    branchSwapModalContent.classList.add("hidden");
+
+    try {
+        const cutoffVal = cutoffInput?.value?.trim() || latestPredictionData?.student_input?.cutoff_mark || "";
+        const rankVal = stateRankInput?.value?.trim() || latestPredictionData?.student_input?.state_rank || "";
+
+        const params = new URLSearchParams({
+            college_code: result.college_code,
+            community: community,
+            quota: quota,
+            cutoff_mark: cutoffVal,
+            state_rank: rankVal
+        });
+
+        const resp = await fetch(`/api/branch-swap?${params.toString()}`);
+        if (!resp.ok) {
+            throw new Error(`Failed to load branch swap data (HTTP ${resp.status})`);
+        }
+
+        const data = await resp.json();
+        if (data.status !== "ok" || !data.branches || data.branches.length === 0) {
+            branchSwapModalLoading.classList.add("hidden");
+            branchSwapModalContent.classList.remove("hidden");
+            branchSwapTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#94a3b8; padding:20px;">No other engineering branches found for this institution.</td></tr>`;
+            return;
+        }
+
+        branchSwapTableBody.innerHTML = data.branches.map(b => {
+            const cut = b.latest_cutoff !== null ? Number(b.latest_cutoff).toFixed(2) : "—";
+            const rnk = b.latest_closing_rank !== null ? Number(b.latest_closing_rank).toLocaleString() : "—";
+            const avg = b.average_cutoff !== null ? Number(b.average_cutoff).toFixed(2) : "—";
+            
+            let cushionDisplay = "—";
+            if (b.cushion !== null && b.cushion !== undefined) {
+                const cVal = Number(b.cushion);
+                const color = cVal >= 0 ? "#10b981" : "#ef4444";
+                const prefix = cVal > 0 ? "+" : "";
+                cushionDisplay = `<span style="color:${color}; font-weight:700;">${prefix}${cVal.toFixed(2)}</span>`;
+            }
+
+            const tier = b.tier || "Target";
+            const tierCls = tier.toLowerCase();
+            const isOriginal = String(b.branch_code).toUpperCase() === String(result.branch_code).toUpperCase();
+
+            return `
+                <tr style="${isOriginal ? 'background: rgba(99, 102, 241, 0.12);' : ''}">
+                    <td>
+                        <strong style="color:#f8fafc;">${escapeHtml(b.branch_code)}</strong> - 
+                        <span style="color:#cbd5e1;">${escapeHtml(b.branch_name)}</span>
+                        ${isOriginal ? '<span style="font-size:0.7rem; color:#818cf8; margin-left:6px; font-weight:700;">(CURRENT)</span>' : ''}
+                    </td>
+                    <td style="color:#38bdf8; font-weight:600;">${cut}</td>
+                    <td>${rnk}</td>
+                    <td>${avg}</td>
+                    <td>${cushionDisplay}</td>
+                    <td>
+                        <span class="tier-badge tier-${tierCls}">
+                            ${tierEmoji(tier)} ${escapeHtml(tier)}
+                        </span>
+                    </td>
+                    <td>
+                        <button 
+                            type="button" 
+                            class="branch-swap-add-btn" 
+                            data-code="${escapeHtml(b.branch_code)}"
+                            data-name="${escapeHtml(b.branch_name)}"
+                            data-cut="${b.latest_cutoff || ''}"
+                            data-rnk="${b.latest_closing_rank || ''}"
+                            data-tier="${tier}"
+                        >
+                            + Add
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join("");
+
+        // Attach add handlers for each branch
+        branchSwapTableBody.querySelectorAll(".branch-swap-add-btn").forEach(btn => {
+            const bCode = btn.dataset.code;
+            const bName = btn.dataset.name;
+            const bTier = btn.dataset.tier;
+            const bCut = btn.dataset.cut ? Number(btn.dataset.cut) : null;
+            const bRnk = btn.dataset.rnk ? Number(btn.dataset.rnk) : null;
+
+            btn.addEventListener("click", () => {
+                const added = addChoice({
+                    college_code: result.college_code,
+                    college_name: result.college_name,
+                    district: result.district,
+                    branch_code: bCode,
+                    branch_name: bName,
+                    tier: bTier,
+                    latest_cutoff: bCut,
+                    latest_closing_rank: bRnk,
+                    estimated_probability: bTier === "Safe" ? 85 : (bTier === "Target" ? 55 : 20)
+                });
+                btn.textContent = added ? "Added ✓" : "Already Added";
+                btn.disabled = true;
+            });
+        });
+
+        branchSwapModalLoading.classList.add("hidden");
+        branchSwapModalContent.classList.remove("hidden");
+
+    } catch (err) {
+        console.error("Error opening branch swap modal:", err);
+        branchSwapModalLoading.classList.add("hidden");
+        branchSwapModalContent.classList.remove("hidden");
+        branchSwapTableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#ef4444; padding:20px;">Error: ${escapeHtml(err.message)}</td></tr>`;
+    }
 }

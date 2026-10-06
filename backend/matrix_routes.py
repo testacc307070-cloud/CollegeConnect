@@ -30,6 +30,7 @@ def rank_matrix():
     Optional:
     - district
     - branch_code
+    - college_code
     - limit
     """
 
@@ -39,6 +40,7 @@ def rank_matrix():
         community = request.args.get("community")
         district = request.args.get("district")
         branch_code = request.args.get("branch_code")
+        college_code = request.args.get("college_code")
 
         limit_value = request.args.get("limit", "100")
 
@@ -145,6 +147,18 @@ def rank_matrix():
             query += " AND b.branch_code = %s"
             params.append(branch_code)
 
+        # ---------------------------------------------
+        # Optional college filter
+        # ---------------------------------------------
+
+        if college_code:
+            try:
+                college_code_int = int(college_code)
+                query += " AND c.college_code = %s"
+                params.append(college_code_int)
+            except ValueError:
+                pass
+
         query += """
             ORDER BY
                 h.closing_rank,
@@ -198,7 +212,8 @@ def rank_matrix():
             "input": {
                 "community": community,
                 "district": district,
-                "branch_code": branch_code
+                "branch_code": branch_code,
+                "college_code": college_code
             },
 
             "results": results,

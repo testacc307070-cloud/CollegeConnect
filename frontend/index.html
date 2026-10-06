@@ -19,6 +19,17 @@
         href="/assets/styles.css"
     >
 
+    <script>
+        (function() {
+            try {
+                var theme = localStorage.getItem("collegeconnect_theme");
+                if (theme === "light") {
+                    document.documentElement.setAttribute("data-theme", "light");
+                }
+            } catch (e) {}
+        })();
+    </script>
+
     <style>
 
         /* =========================================================
@@ -718,6 +729,17 @@
 
             </div>
 
+            <button
+                id="themeToggleBtn"
+                class="theme-toggle-btn"
+                type="button"
+                aria-label="Toggle light or dark theme"
+                title="Toggle Theme"
+            >
+                <span class="theme-toggle-icon" id="themeToggleIcon">🌙</span>
+                <span class="theme-toggle-text" id="themeToggleText">Dark</span>
+            </button>
+
         </div>
 
     </nav>
@@ -834,7 +856,42 @@
                             TNEA cutoff mark is out of 200.
                         </small>
 
+                        <div class="calc-widget">
+                            <div class="calc-widget-header">
+                                <span class="calc-widget-title">🧮 Class 12 Marks Calculator</span>
+                                <button type="button" id="toggleCalcButton" class="calc-toggle-btn">
+                                    Calculate from Marks
+                                </button>
+                            </div>
+                            <div id="calculatorPanel" class="calc-panel hidden">
+                                <div class="calc-grid">
+                                    <div class="calc-field">
+                                        <label for="mathsMarks">Maths (0–100)</label>
+                                        <input type="number" id="mathsMarks" min="0" max="100" step="0.5" placeholder="e.g. 98">
+                                    </div>
+                                    <div class="calc-field">
+                                        <label for="physicsMarks">Physics (0–100)</label>
+                                        <input type="number" id="physicsMarks" min="0" max="100" step="0.5" placeholder="e.g. 96">
+                                    </div>
+                                    <div class="calc-field">
+                                        <label for="chemistryMarks">Chemistry (0–100)</label>
+                                        <input type="number" id="chemistryMarks" min="0" max="100" step="0.5" placeholder="e.g. 94">
+                                    </div>
+                                </div>
+                                <div class="calc-formula-note">
+                                    Formula: <code>Cutoff = Maths + Physics / 2 + Chemistry / 2</code>
+                                </div>
+                                <div class="calc-footer">
+                                    <button type="button" id="applyCutoffButton" class="calc-apply-btn">
+                                        Apply to Cutoff
+                                    </button>
+                                    <span id="calcPreviewDisplay" class="calc-preview">Cutoff: — / 200</span>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
+
 
 
                     <div class="form-group">
@@ -917,6 +974,61 @@
 
                     </div>
 
+
+                    <div class="form-group">
+
+                        <label for="counselingQuota">
+                            Quota Category
+                            <span class="optional-label">
+                                DoTE Counseling
+                            </span>
+                        </label>
+
+                        <select id="counselingQuota">
+                            <option value="GENERAL" selected>
+                                General Academic (Primary 2021–2025 Data)
+                            </option>
+                            <option value="GOVT_7_5">
+                                7.5% Govt School Preferential Quota
+                            </option>
+                            <option value="SPECIAL_SPORTS">
+                                Special: Sports Reservation
+                            </option>
+                            <option value="SPECIAL_EXSERVICE">
+                                Special: Ex-Servicemen Reservation
+                            </option>
+                            <option value="SPECIAL_PWD">
+                                Special: Differently Abled (PWD)
+                            </option>
+                        </select>
+
+                    </div>
+
+
+                </div>
+
+
+                <!-- =================================================
+                     QUOTA ADVISORY BANNER
+                ================================================== -->
+
+                <div id="quotaAdvisoryBanner" class="quota-advisory hidden">
+
+                    <div class="quota-advisory-icon">
+                        ℹ️
+                    </div>
+
+                    <div class="quota-advisory-text">
+
+                        <strong id="quotaAdvisoryTitle">
+                            7.5% Government School Preferential Quota
+                        </strong>
+
+                        <p id="quotaAdvisoryDesc">
+                            In Tamil Nadu TNEA counseling, Government school students (7.5% reservation) and Special Category applicants participate in dedicated preliminary counseling rounds administered directly by DoTE. Historical cutoffs displayed below represent General Academic benchmarks; for the 7.5% quota, closing cutoffs typically operate 15–30 marks lower at premier Tier-1/Tier-2 colleges. Use these results as a reliable reference baseline.
+                        </p>
+
+                    </div>
 
                 </div>
 
@@ -1092,57 +1204,84 @@
 
 
                 <!-- =================================================
-                     SPECIFIC COLLEGE
+                     SPECIFIC COLLEGE & INSTITUTIONAL TIER
                 ================================================== -->
 
-                <div class="form-group">
+                <div class="filter-inputs">
 
-                    <label>
+                    <div class="form-group">
 
-                        Specific College
+                        <label>
+                            Specific College
+                            <span class="optional-label">
+                                Optional
+                            </span>
+                        </label>
 
-                        <span class="optional-label">
-                            Optional
-                        </span>
+                        <div class="college-search-box">
 
-                    </label>
+                            <div class="picker-search-row">
 
+                                <input
+                                    id="collegeSearch"
+                                    class="picker-search"
+                                    type="text"
+                                    placeholder="Search college..."
+                                    autocomplete="off"
+                                >
 
-                    <div class="college-search-box">
+                                <button
+                                    id="collegeSearchButton"
+                                    class="picker-search-btn"
+                                    type="button"
+                                >
+                                    Search
+                                </button>
 
+                            </div>
 
-                        <div class="picker-search-row">
+                            <div
+                                id="collegeSuggestions"
+                                class="college-suggestions hidden"
+                            ></div>
 
-                            <input
-                                id="collegeSearch"
-                                class="picker-search"
-                                type="text"
-                                placeholder="Search college..."
-                                autocomplete="off"
-                            >
-
-
-                            <button
-                                id="collegeSearchButton"
-                                class="picker-search-btn"
-                                type="button"
-                            >
-                                Search
-                            </button>
+                            <div
+                                id="collegeSelectedDisplay"
+                                class="college-selected-display hidden"
+                            ></div>
 
                         </div>
 
-
-                        <div
-                            id="collegeSuggestions"
-                            class="college-suggestions hidden"
-                        ></div>
+                    </div>
 
 
-                        <div
-                            id="collegeSelectedDisplay"
-                            class="college-selected-display hidden"
-                        ></div>
+                    <div class="form-group">
+
+                        <label for="tierFilter">
+                            Institutional Tier
+                            <span class="optional-label">
+                                Filter by tier
+                            </span>
+                        </label>
+
+                        <select id="tierFilter">
+                            <option value="ALL" selected>
+                                All Tiers (467 Colleges)
+                            </option>
+                            <option value="Tier-1">
+                                🏛️ Tier-1: Premier Institutes (69 Colleges)
+                            </option>
+                            <option value="Tier-2">
+                                🏢 Tier-2: Established Colleges (211 Colleges)
+                            </option>
+                            <option value="Tier-3">
+                                🏫 Tier-3: Emerging & Regional (187 Colleges)
+                            </option>
+                        </select>
+
+                        <small style="color: #64748b; font-size: 11px; margin-top: 5px;">
+                            Classified by historical cutoff clustering & autonomous accreditation.
+                        </small>
 
                     </div>
 
@@ -1498,7 +1637,6 @@
 
                     <div class="optimizer-actions">
 
-
                         <button
                             id="exportButton"
                             class="primary-button"
@@ -1507,6 +1645,21 @@
                             Export CSV
                         </button>
 
+                        <button
+                            id="exportPdfButton"
+                            class="primary-button"
+                            type="button"
+                        >
+                            Export PDF
+                        </button>
+
+                        <button
+                            id="exportDoteButton"
+                            class="secondary-button"
+                            type="button"
+                        >
+                            Copy for DoTE
+                        </button>
 
                         <button
                             id="clearChoicesButton"
@@ -1683,6 +1836,26 @@
                     </div>
 
 
+                    <div class="form-group">
+
+                        <label for="matrixCollege">
+                            Specific College
+                        </label>
+
+
+                        <select
+                            id="matrixCollege"
+                        >
+
+                            <option value="">
+                                All colleges
+                            </option>
+
+                        </select>
+
+                    </div>
+
+
                     <div class="matrix-action">
 
                         <button
@@ -1813,8 +1986,97 @@
         </section>
 
 
-    </main>
+        <!-- =====================================================
+             MODALS: 5-YEAR TREND & CAMPUS BRANCH SWAP
+        ====================================================== -->
 
+        <div id="trendModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="trendModalTitle">
+            <div class="modal-container">
+                <div class="modal-header">
+                    <div>
+                        <h3 id="trendModalTitle" class="modal-title">5-Year Cutoff Trend</h3>
+                        <p id="trendModalSubtitle" class="modal-subtitle hidden">—</p>
+                    </div>
+                    <button id="trendModalClose" class="modal-close-btn" type="button" aria-label="Close modal">&times;</button>
+                </div>
+                <div id="trendModalBody" class="modal-body">
+                    <div id="trendModalLoading" class="modal-loading hidden">
+                        <div class="modal-spinner"></div>
+                        <span>Loading historical trend records...</span>
+                    </div>
+                    <div id="trendModalContent">
+                        <div class="trend-legend-pill-wrapper">
+                            <div class="trend-legend-pill">
+                                <span class="legend-rect"></span>
+                                <span id="trendLegendText">Closing Cutoff Score (OC)</span>
+                            </div>
+                        </div>
+
+                        <div id="trendChartSvgContainer" class="trend-chart-svg-container"></div>
+
+                        <div id="trendMetricsCard" class="trend-metrics-grid"></div>
+
+                        <details class="trend-table-details">
+                            <summary class="trend-table-toggle">View Detailed Year-by-Year Records</summary>
+                            <div class="trend-table-container">
+                                <table class="trend-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Academic Year</th>
+                                            <th>Cutoff Mark</th>
+                                            <th>Closing Rank</th>
+                                            <th>Completeness</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="trendTableBody"></tbody>
+                                </table>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="branchSwapModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="branchSwapModalTitle">
+            <div class="modal-container modal-wide">
+                <div class="modal-header">
+                    <div>
+                        <h3 id="branchSwapModalTitle" class="modal-title">🔄 Campus Branch Swap Alternatives</h3>
+                        <p id="branchSwapModalSubtitle" class="modal-subtitle">—</p>
+                    </div>
+                    <button id="branchSwapModalClose" class="modal-close-btn" type="button" aria-label="Close modal">&times;</button>
+                </div>
+                <div id="branchSwapModalBody" class="modal-body">
+                    <div id="branchSwapModalLoading" class="modal-loading hidden">
+                        <div class="modal-spinner"></div>
+                        <span>Discovering branches in this campus...</span>
+                    </div>
+                    <div id="branchSwapModalContent">
+                        <div class="modal-callout">
+                            💡 <strong>Campus Strategy:</strong> If your preferred branch at this top institution is competitive (Reach), consider these alternative engineering disciplines in the same campus.
+                        </div>
+                        <div class="branch-swap-table-container">
+                            <table class="trend-table branch-swap-table">
+                                <thead>
+                                    <tr>
+                                        <th>Branch</th>
+                                        <th>Latest Cutoff</th>
+                                        <th>Latest Rank</th>
+                                        <th>5-Yr Avg</th>
+                                        <th>Score Cushion</th>
+                                        <th>Feasibility</th>
+                                        <th>Optimizer</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="branchSwapTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
 
     <script src="/assets/app.js"></script>
 

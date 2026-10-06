@@ -345,34 +345,67 @@ def attach_probability_scores(
 
 
     # ------------------------------------------------------------------------
-    # Remove internal historical_records.
+    # Dynamic resolution of latest values & trajectory across available years
     # ------------------------------------------------------------------------
 
     final_results = []
 
-
     for result in scored:
 
-        cleaned =  dict(
-                result
-            )
+        cleaned = dict(result)
+        hist = result.get("historical_records") or []
 
+        valid_cutoffs = [
+            r for r in hist
+            if r.get("cutoff_mark") is not None
+        ]
+
+        valid_ranks = [
+            r for r in hist
+            if r.get("closing_rank") is not None
+        ]
+
+        if valid_cutoffs:
+            valid_cutoffs.sort(key=lambda x: int(x["year"]))
+            if cleaned.get("latest_cutoff") is None:
+                cleaned["latest_cutoff"] = float(valid_cutoffs[-1]["cutoff_mark"])
+            if (
+                cleaned.get("latest_closing_rank") is None
+                and valid_cutoffs[-1].get("closing_rank") is not None
+            ):
+                cleaned["latest_closing_rank"] = int(valid_cutoffs[-1]["closing_rank"])
+            if cleaned.get("cutoff_change") is None and len(valid_cutoffs) >= 2:
+                cleaned["cutoff_change"] = round(
+                    float(valid_cutoffs[-1]["cutoff_mark"])
+                    - float(valid_cutoffs[0]["cutoff_mark"]),
+                    3
+                )
+
+        if valid_ranks:
+            valid_ranks.sort(key=lambda x: int(x["year"]))
+            if cleaned.get("latest_closing_rank") is None:
+                cleaned["latest_closing_rank"] = int(valid_ranks[-1]["closing_rank"])
+            if (
+                cleaned.get("latest_cutoff") is None
+                and valid_ranks[-1].get("cutoff_mark") is not None
+            ):
+                cleaned["latest_cutoff"] = float(valid_ranks[-1]["cutoff_mark"])
+            if cleaned.get("rank_change") is None and len(valid_ranks) >= 2:
+                cleaned["rank_change"] = (
+                    int(valid_ranks[-1]["closing_rank"])
+                    - int(valid_ranks[0]["closing_rank"])
+                )
 
         cleaned.pop(
             "historical_records",
             None,
         )
 
-
         final_results.append(
             cleaned
         )
 
-
     return (
-
         final_results,
-
         None,
-
-    )
+    )

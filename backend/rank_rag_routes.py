@@ -29,32 +29,27 @@ ALLOWED_COMMUNITIES = {
 }
 
 
-@rank_rag_bp.route("/api/rank-rag-explanation", methods=["GET"])
+@rank_rag_bp.route("/api/rank-rag-explanation", methods=["GET", "POST"])
 def rank_rag_explanation():
     """
     Generate a grounded explanation for a student's
-    state rank.
-
-    Required:
-    - state_rank
-    - community
-
-    Optional:
-    - district
-    - branch_code
+    state rank. Supports both GET and POST.
     """
 
     conn = None
 
     try:
         # -------------------------------------------------
-        # Read inputs
+        # Read inputs from query parameters or JSON body
         # -------------------------------------------------
+        body = request.get_json(silent=True) or {}
 
-        state_rank = request.args.get("state_rank")
-        community = request.args.get("community")
-        district = request.args.get("district")
-        branch_code = request.args.get("branch_code")
+        state_rank = request.args.get("state_rank") if request.args.get("state_rank") is not None else body.get("state_rank")
+        community = request.args.get("community") or body.get("community")
+        district = request.args.get("district") or body.get("district")
+        branch_code = request.args.get("branch_code") or body.get("branch_code")
+        college_code = request.args.get("college_code") or body.get("college_code")
+
 
         # -------------------------------------------------
         # Validate state rank
@@ -152,12 +147,17 @@ def rank_rag_explanation():
             query += " AND b.branch_code = %s"
             params.append(branch_code)
 
+        if college_code:
+            query += " AND c.college_code = %s"
+            params.append(college_code)
+
         query += """
             ORDER BY
                 h.year DESC,
                 h.closing_rank ASC
             LIMIT 20
         """
+
 
         with conn.cursor() as cursor:
             cursor.execute(query, params)
@@ -239,13 +239,19 @@ def rank_rag_explanation():
         # Generate grounded explanation
         # -------------------------------------------------
 
-        explanation = generate_rank_grounded_explanation(
+        res = generate_rank_grounded_explanation(
             state_rank=state_rank,
             community=community,
             retrieved_results=evidence,
             district=district,
-            branch_code=branch_code
+            branch_code=branch_code,
+            college_code=college_code,
         )
+
+        if isinstance(res, tuple):
+            explanation, model_name = res
+        else:
+            explanation, model_name = res, "Gemini"
 
         # -------------------------------------------------
         # Return
@@ -259,7 +265,8 @@ def rank_rag_explanation():
                 "state_rank": state_rank,
                 "community": community,
                 "district": district,
-                "branch_code": branch_code
+                "branch_code": branch_code,
+                "college_code": college_code,
             },
 
             "retrieved_count":
@@ -269,10 +276,11 @@ def rank_rag_explanation():
                 evidence,
 
             "generation_model":
-                "Gemini",
+                model_name,
 
             "explanation":
                 explanation,
+
 
             "note": (
                 "The explanation is generated from "
