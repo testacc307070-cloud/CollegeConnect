@@ -71,9 +71,6 @@ const stateRankInput =
 const communitySelect =
     byId("community");
 
-const tierFilterSelect =
-    byId("tierFilter");
-
 const clearButton =
     byId("clearButton");
 
@@ -238,14 +235,53 @@ const histCommunityCheckboxes =
 const histClearCommsBtn =
     byId("histClearCommsBtn");
 
-const histDistrict =
-    byId("histDistrict");
+const histDistrictSearch =
+    byId("histDistrictSearch");
 
-const histBranch =
-    byId("histBranch");
+const histDistrictSearchButton =
+    byId("histDistrictSearchButton");
 
-const histCollege =
-    byId("histCollege");
+const histDistrictOptions =
+    byId("histDistrictOptions");
+
+const histSelectedDistrictsContainer =
+    byId("histSelectedDistricts");
+
+const histDistrictCount =
+    byId("histDistrictCount");
+
+const histClearDistrictsButton =
+    byId("histClearDistricts");
+
+const histBranchSearch =
+    byId("histBranchSearch");
+
+const histBranchSearchButton =
+    byId("histBranchSearchButton");
+
+const histBranchOptions =
+    byId("histBranchOptions");
+
+const histSelectedBranchesContainer =
+    byId("histSelectedBranches");
+
+const histBranchCount =
+    byId("histBranchCount");
+
+const histClearBranchesButton =
+    byId("histClearBranches");
+
+const histCollegeSearch =
+    byId("histCollegeSearch");
+
+const histCollegeSearchButton =
+    byId("histCollegeSearchButton");
+
+const histCollegeSuggestions =
+    byId("histCollegeSuggestions");
+
+const histCollegeSelectedDisplay =
+    byId("histCollegeSelectedDisplay");
 
 const loadHistoricalButton =
     byId("loadHistoricalButton");
@@ -395,10 +431,14 @@ document.addEventListener(
         renderCollegeSuggestions();
 
         await loadHistoricalDistricts();
+        renderHistDistrictPicker();
 
         await loadHistoricalBranches();
+        renderHistBranchPicker();
 
         await loadHistoricalColleges();
+        renderHistCollegeSuggestions();
+        renderHistSelectedCollege();
 
         initPredictionMethodToggle();
 
@@ -1611,11 +1651,21 @@ document.addEventListener(
 
         if (
             !event.target.closest(
-                ".college-search-box"
+                "#predictorCollegeSearchBox"
             )
         ) {
 
             hideCollegeSuggestions();
+
+        }
+
+        if (
+            !event.target.closest(
+                "#histCollegeSearchBox"
+            )
+        ) {
+
+            hideHistCollegeSuggestions();
 
         }
 
@@ -1798,22 +1848,6 @@ async function runPrediction(
             params.set(
                 "college_code",
                 input.collegeCode
-            );
-
-        }
-
-        const tierVal =
-            tierFilterSelect?.value ||
-            "ALL";
-
-        if (
-            tierVal &&
-            tierVal !== "ALL"
-        ) {
-
-            params.set(
-                "tier",
-                tierVal
             );
 
         }
@@ -2373,18 +2407,6 @@ function createResultCard(
 
     }
 
-    const instTier =
-        result.institutional_tier;
-
-    let instTierBadge = "";
-    if (instTier === "Tier-1") {
-        instTierBadge = `<span class="tier-inst-badge tier-inst-1" title="Premier Government / Top Autonomous Institution">🏛️ Tier-1</span>`;
-    } else if (instTier === "Tier-2") {
-        instTierBadge = `<span class="tier-inst-badge tier-inst-2" title="Established Engineering College">🏢 Tier-2</span>`;
-    } else if (instTier === "Tier-3") {
-        instTierBadge = `<span class="tier-inst-badge tier-inst-3" title="Developing / Regional Engineering College">🏫 Tier-3</span>`;
-    }
-
     card.innerHTML = `
 
         <div class="result-card-header">
@@ -2397,7 +2419,6 @@ function createResultCard(
                         result.college_name ||
                         "Unknown College"
                     )}
-                    ${instTierBadge}
 
                 </div>
 
@@ -5512,74 +5533,277 @@ let historicalPageSizeVal = 25;
 let historicalTotalPages = 1;
 let historicalTotalOfferings = 0;
 
+let histAllDistricts = [];
+let histSelectedDistricts = [];
+
+let histAllBranches = [];
+let histSelectedBranches = [];
+
+let histAllColleges = [];
+let histSelectedCollege = null;
+
 async function loadHistoricalDistricts() {
-    if (!histDistrict) return;
     try {
         const response = await fetch("/api/districts");
         const data = await response.json();
-        if (!response.ok || data.status !== "ok") return;
-
-        histDistrict.innerHTML = `<option value="">All Districts (${data.districts.length})</option>`;
-        data.districts.forEach(d => {
-            const opt = document.createElement("option");
-            opt.value = d;
-            opt.textContent = d;
-            histDistrict.appendChild(opt);
-        });
+        if (!response.ok || data.status !== "ok") {
+            throw new Error(data.message || "Failed to load districts.");
+        }
+        histAllDistricts = Array.isArray(data.districts) ? data.districts : [];
     } catch (e) {
         console.error("Error loading historical districts:", e);
     }
 }
 
+function renderHistDistrictPicker() {
+    if (!histDistrictOptions) return;
+    const query = histDistrictSearch ? histDistrictSearch.value.trim().toLowerCase() : "";
+    const filtered = histAllDistricts.filter(district => String(district).toLowerCase().includes(query));
+
+    histDistrictOptions.innerHTML = "";
+    if (filtered.length === 0) {
+        histDistrictOptions.innerHTML = `<div class="picker-empty">No districts found.</div>`;
+    } else {
+        filtered.forEach(district => {
+            const isSelected = histSelectedDistricts.includes(district);
+            const row = document.createElement("div");
+            row.className = "picker-option" + (isSelected ? " selected" : "");
+            row.innerHTML = `
+                <span class="picker-check"></span>
+                <span>${escapeHtml(district)}</span>
+            `;
+            row.addEventListener("click", async () => {
+                toggleHistDistrict(district);
+                renderHistDistrictPicker();
+                await loadHistoricalBranches();
+                renderHistBranchPicker();
+                await loadHistoricalColleges();
+                renderHistCollegeSuggestions();
+            });
+            histDistrictOptions.appendChild(row);
+        });
+    }
+    renderHistDistrictChips();
+}
+
+function toggleHistDistrict(district) {
+    const index = histSelectedDistricts.indexOf(district);
+    if (index >= 0) {
+        histSelectedDistricts.splice(index, 1);
+    } else {
+        histSelectedDistricts.push(district);
+    }
+}
+
+function renderHistDistrictChips() {
+    if (!histSelectedDistrictsContainer) return;
+    histSelectedDistrictsContainer.innerHTML = "";
+    if (histSelectedDistricts.length === 0) {
+        if (histDistrictCount) histDistrictCount.textContent = "No districts selected";
+        return;
+    }
+    if (histDistrictCount) {
+        histDistrictCount.textContent = `${histSelectedDistricts.length} district${histSelectedDistricts.length === 1 ? "" : "s"} selected`;
+    }
+    histSelectedDistricts.forEach(district => {
+        const chip = document.createElement("div");
+        chip.className = "selected-chip";
+        chip.innerHTML = `
+            <span>${escapeHtml(district)}</span>
+            <button type="button" aria-label="Remove district">×</button>
+        `;
+        chip.querySelector("button").addEventListener("click", async () => {
+            histSelectedDistricts = histSelectedDistricts.filter(item => item !== district);
+            renderHistDistrictPicker();
+            await loadHistoricalBranches();
+            renderHistBranchPicker();
+            await loadHistoricalColleges();
+            renderHistCollegeSuggestions();
+        });
+        histSelectedDistrictsContainer.appendChild(chip);
+    });
+}
+
 async function loadHistoricalBranches() {
-    if (!histBranch) return;
     try {
         const params = new URLSearchParams();
-        if (histDistrict?.value) {
-            params.set("district", histDistrict.value);
-        }
-        const url = params.toString() ? `/api/branches?${params.toString()}` : "/api/branches";
+        appendMultipleParams(params, "district", histSelectedDistricts);
+        const query = params.toString();
+        const url = query ? `/api/branches?${query}` : "/api/branches";
         const response = await fetch(url);
         const data = await response.json();
-        if (!response.ok || data.status !== "ok") return;
-
-        histBranch.innerHTML = `<option value="">All Branches (${data.branches.length})</option>`;
-        data.branches.forEach(b => {
-            const opt = document.createElement("option");
-            opt.value = b.branch_code;
-            opt.textContent = `${b.branch_code} - ${b.branch_name}`;
-            histBranch.appendChild(opt);
-        });
+        if (!response.ok || data.status !== "ok") {
+            throw new Error(data.message || "Failed to load branches.");
+        }
+        histAllBranches = Array.isArray(data.branches) ? data.branches : [];
+        const available = new Set(histAllBranches.map(branch => String(branch.branch_code)));
+        histSelectedBranches = histSelectedBranches.filter(code => available.has(String(code)));
     } catch (e) {
         console.error("Error loading historical branches:", e);
     }
 }
 
+function renderHistBranchPicker() {
+    if (!histBranchOptions) return;
+    const query = histBranchSearch ? histBranchSearch.value.trim().toLowerCase() : "";
+    const filtered = histAllBranches.filter(branch => {
+        const text = `${branch.branch_code} ${branch.branch_name}`.toLowerCase();
+        return text.includes(query);
+    });
+
+    histBranchOptions.innerHTML = "";
+    if (filtered.length === 0) {
+        histBranchOptions.innerHTML = `<div class="picker-empty">No branches / courses found.</div>`;
+    } else {
+        filtered.forEach(branch => {
+            const code = String(branch.branch_code);
+            const isSelected = histSelectedBranches.some(val => String(val) === code);
+            const row = document.createElement("div");
+            row.className = "picker-option" + (isSelected ? " selected" : "");
+            row.innerHTML = `
+                <span class="picker-check"></span>
+                <span>${escapeHtml(code)} - ${escapeHtml(branch.branch_name)}</span>
+            `;
+            row.addEventListener("click", async () => {
+                toggleHistBranch(code);
+                renderHistBranchPicker();
+                await loadHistoricalColleges();
+                renderHistCollegeSuggestions();
+            });
+            histBranchOptions.appendChild(row);
+        });
+    }
+    renderHistBranchChips();
+}
+
+function toggleHistBranch(branchCode) {
+    const normalized = String(branchCode);
+    const index = histSelectedBranches.findIndex(val => String(val) === normalized);
+    if (index >= 0) {
+        histSelectedBranches.splice(index, 1);
+    } else {
+        histSelectedBranches.push(normalized);
+    }
+}
+
+function renderHistBranchChips() {
+    if (!histSelectedBranchesContainer) return;
+    histSelectedBranchesContainer.innerHTML = "";
+    if (histSelectedBranches.length === 0) {
+        if (histBranchCount) histBranchCount.textContent = "No branches selected";
+        return;
+    }
+    if (histBranchCount) {
+        histBranchCount.textContent = `${histSelectedBranches.length} branch${histSelectedBranches.length === 1 ? "" : "es"} selected`;
+    }
+    histSelectedBranches.forEach(branchCode => {
+        const branch = histAllBranches.find(item => String(item.branch_code) === String(branchCode));
+        const label = branch ? `${branch.branch_code} - ${branch.branch_name}` : String(branchCode);
+        const chip = document.createElement("div");
+        chip.className = "selected-chip";
+        chip.innerHTML = `
+            <span>${escapeHtml(label)}</span>
+            <button type="button" aria-label="Remove branch">×</button>
+        `;
+        chip.querySelector("button").addEventListener("click", async () => {
+            histSelectedBranches = histSelectedBranches.filter(val => String(val) !== String(branchCode));
+            renderHistBranchPicker();
+            await loadHistoricalColleges();
+            renderHistCollegeSuggestions();
+        });
+        histSelectedBranchesContainer.appendChild(chip);
+    });
+}
+
 async function loadHistoricalColleges() {
-    if (!histCollege) return;
     try {
         const params = new URLSearchParams();
-        if (histDistrict?.value) {
-            params.set("district", histDistrict.value);
-        }
-        if (histBranch?.value) {
-            params.set("branch_code", histBranch.value);
-        }
-        const url = params.toString() ? `/api/colleges?${params.toString()}` : "/api/colleges";
+        appendMultipleParams(params, "district", histSelectedDistricts);
+        appendMultipleParams(params, "branch_code", histSelectedBranches);
+        const query = params.toString();
+        const url = query ? `/api/colleges?${query}` : "/api/colleges";
         const response = await fetch(url);
         const data = await response.json();
-        if (!response.ok || data.status !== "ok") return;
-
-        histCollege.innerHTML = `<option value="">All Colleges (${data.colleges.length})</option>`;
-        data.colleges.forEach(c => {
-            const opt = document.createElement("option");
-            opt.value = c.college_code;
-            opt.textContent = `${c.college_code} - ${c.college_name}`;
-            histCollege.appendChild(opt);
-        });
+        if (!response.ok || data.status !== "ok") {
+            throw new Error(data.message || "Failed to load colleges.");
+        }
+        histAllColleges = Array.isArray(data.colleges) ? data.colleges : [];
+        if (histSelectedCollege) {
+            const available = histAllColleges.some(c => String(c.college_code) === String(histSelectedCollege.college_code));
+            if (!available) {
+                histSelectedCollege = null;
+                renderHistSelectedCollege();
+            }
+        }
     } catch (e) {
         console.error("Error loading historical colleges:", e);
     }
+}
+
+function renderHistCollegeSuggestions() {
+    if (!histCollegeSuggestions || !histCollegeSearch) return;
+    const query = histCollegeSearch.value.trim().toLowerCase();
+    const filtered = histAllColleges.filter(college => {
+        const text = `${college.college_code} ${college.college_name} ${college.district}`.toLowerCase();
+        return text.includes(query);
+    }).slice(0, 80);
+
+    histCollegeSuggestions.innerHTML = "";
+    if (filtered.length === 0) {
+        histCollegeSuggestions.innerHTML = `
+            <div class="college-suggestion">
+                <div class="college-suggestion-meta">No colleges found.</div>
+            </div>
+        `;
+    } else {
+        filtered.forEach(college => {
+            const row = document.createElement("div");
+            row.className = "college-suggestion";
+            row.innerHTML = `
+                <div class="college-suggestion-name">${escapeHtml(college.college_name)}</div>
+                <div class="college-suggestion-meta">Code: ${escapeHtml(String(college.college_code))} · ${escapeHtml(college.district || "Unknown District")}</div>
+            `;
+            row.addEventListener("click", () => {
+                histSelectedCollege = {
+                    college_code: college.college_code,
+                    college_name: college.college_name,
+                    district: college.district
+                };
+                histCollegeSearch.value = college.college_name;
+                renderHistSelectedCollege();
+                hideHistCollegeSuggestions();
+            });
+            histCollegeSuggestions.appendChild(row);
+        });
+    }
+
+    if (query) {
+        histCollegeSuggestions.classList.remove("hidden");
+    }
+}
+
+function renderHistSelectedCollege() {
+    if (!histCollegeSelectedDisplay) return;
+    if (!histSelectedCollege) {
+        histCollegeSelectedDisplay.classList.add("hidden");
+        histCollegeSelectedDisplay.innerHTML = "";
+        return;
+    }
+    histCollegeSelectedDisplay.classList.remove("hidden");
+    histCollegeSelectedDisplay.innerHTML = `
+        <span>Selected: <strong>${escapeHtml(histSelectedCollege.college_name)}</strong> · ${escapeHtml(String(histSelectedCollege.college_code))}</span>
+        <button id="removeHistSelectedCollege" type="button" aria-label="Remove selected college">×</button>
+    `;
+    byId("removeHistSelectedCollege")?.addEventListener("click", () => {
+        histSelectedCollege = null;
+        if (histCollegeSearch) histCollegeSearch.value = "";
+        renderHistSelectedCollege();
+        renderHistCollegeSuggestions();
+    });
+}
+
+function hideHistCollegeSuggestions() {
+    histCollegeSuggestions?.classList.add("hidden");
 }
 
 function setHistoricalLoading(loading) {
@@ -5632,9 +5856,6 @@ async function searchHistoricalRecords(page = 1) {
 
     const metric = getSelectedHistoricalMetric();
     const communities = getSelectedHistoricalCommunities();
-    const districtVal = histDistrict?.value?.trim() || "";
-    const branchVal = histBranch?.value?.trim() || "";
-    const collegeVal = histCollege?.value?.trim() || "";
     historicalCurrentPage = page;
     historicalPageSizeVal = Number(histPageSize?.value) || 25;
 
@@ -5642,9 +5863,11 @@ async function searchHistoricalRecords(page = 1) {
     years.forEach(y => params.append("year", y));
     params.set("metric", metric);
     communities.forEach(c => params.append("community", c));
-    if (districtVal) params.set("district", districtVal);
-    if (branchVal) params.set("branch_code", branchVal);
-    if (collegeVal) params.set("college_code", collegeVal);
+    histSelectedDistricts.forEach(d => params.append("district", d));
+    histSelectedBranches.forEach(b => params.append("branch_code", b));
+    if (histSelectedCollege) {
+        params.set("college_code", String(histSelectedCollege.college_code));
+    }
     params.set("page", String(page));
     params.set("page_size", String(historicalPageSizeVal));
 
@@ -5846,14 +6069,48 @@ function initHistoricalEvents() {
         });
     });
 
-    // Filter cascade changes
-    histDistrict?.addEventListener("change", async () => {
-        await loadHistoricalBranches();
-        await loadHistoricalColleges();
+    // District picker search & clear
+    histDistrictSearch?.addEventListener("input", () => {
+        renderHistDistrictPicker();
     });
 
-    histBranch?.addEventListener("change", async () => {
+    histDistrictSearchButton?.addEventListener("click", () => {
+        renderHistDistrictPicker();
+    });
+
+    histClearDistrictsButton?.addEventListener("click", async () => {
+        histSelectedDistricts = [];
+        renderHistDistrictPicker();
+        await loadHistoricalBranches();
+        renderHistBranchPicker();
         await loadHistoricalColleges();
+        renderHistCollegeSuggestions();
+    });
+
+    // Branch picker search & clear
+    histBranchSearch?.addEventListener("input", () => {
+        renderHistBranchPicker();
+    });
+
+    histBranchSearchButton?.addEventListener("click", () => {
+        renderHistBranchPicker();
+    });
+
+    histClearBranchesButton?.addEventListener("click", async () => {
+        histSelectedBranches = [];
+        renderHistBranchPicker();
+        await loadHistoricalColleges();
+        renderHistCollegeSuggestions();
+    });
+
+    // College search & suggestions
+    histCollegeSearch?.addEventListener("input", () => {
+        renderHistCollegeSuggestions();
+    });
+
+    histCollegeSearchButton?.addEventListener("click", () => {
+        renderHistCollegeSuggestions();
+        histCollegeSuggestions?.classList.remove("hidden");
     });
 
     // Search button
@@ -5887,12 +6144,21 @@ function initHistoricalEvents() {
             }
         });
 
-        // Reset selects
-        if (histDistrict) histDistrict.value = "";
+        // Reset searchable pickers
+        histSelectedDistricts = [];
+        if (histDistrictSearch) histDistrictSearch.value = "";
+        renderHistDistrictPicker();
+
         await loadHistoricalBranches();
-        if (histBranch) histBranch.value = "";
+        histSelectedBranches = [];
+        if (histBranchSearch) histBranchSearch.value = "";
+        renderHistBranchPicker();
+
         await loadHistoricalColleges();
-        if (histCollege) histCollege.value = "";
+        histSelectedCollege = null;
+        if (histCollegeSearch) histCollegeSearch.value = "";
+        renderHistSelectedCollege();
+        renderHistCollegeSuggestions();
 
         // Reset page size
         if (histPageSize) histPageSize.value = "25";
@@ -6006,10 +6272,6 @@ clearButton?.addEventListener(
         if (stateRankInput) {
             stateRankInput.disabled = true;
             stateRankInput.value = "";
-        }
-
-        if (tierFilterSelect) {
-            tierFilterSelect.value = "ALL";
         }
 
         renderAISuggestedList();

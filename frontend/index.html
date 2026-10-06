@@ -1184,12 +1184,12 @@
 
 
                 <!-- =================================================
-                     SPECIFIC COLLEGE & INSTITUTIONAL TIER
+                     SPECIFIC COLLEGE
                 ================================================== -->
 
                 <div class="filter-inputs">
 
-                    <div class="form-group">
+                    <div class="form-group" style="grid-column: 1 / -1;">
 
                         <label>
                             Specific College
@@ -1198,7 +1198,7 @@
                             </span>
                         </label>
 
-                        <div class="college-search-box">
+                        <div class="college-search-box" id="predictorCollegeSearchBox">
 
                             <div class="picker-search-row">
 
@@ -1206,7 +1206,7 @@
                                     id="collegeSearch"
                                     class="picker-search"
                                     type="text"
-                                    placeholder="Search college..."
+                                    placeholder="Search college by name or code..."
                                     autocomplete="off"
                                 >
 
@@ -1231,37 +1231,6 @@
                             ></div>
 
                         </div>
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label for="tierFilter">
-                            Institutional Tier
-                            <span class="optional-label">
-                                Filter by tier
-                            </span>
-                        </label>
-
-                        <select id="tierFilter">
-                            <option value="ALL" selected>
-                                All Tiers (467 Colleges)
-                            </option>
-                            <option value="Tier-1">
-                                🏛️ Tier-1: Premier Institutes (69 Colleges)
-                            </option>
-                            <option value="Tier-2">
-                                🏢 Tier-2: Established Colleges (211 Colleges)
-                            </option>
-                            <option value="Tier-3">
-                                🏫 Tier-3: Emerging & Regional (187 Colleges)
-                            </option>
-                        </select>
-
-                        <small style="color: #64748b; font-size: 11px; margin-top: 5px;">
-                            Classified by historical cutoff clustering & autonomous accreditation.
-                        </small>
 
                     </div>
 
@@ -1817,35 +1786,146 @@
 
                     <!-- Filter 4: District (Optional) -->
                     <div class="form-group">
-                        <label for="histDistrict">
+                        <label>
                             4. District
                             <span class="optional-label">Optional</span>
                         </label>
-                        <select id="histDistrict">
-                            <option value="">All Districts (38)</option>
-                        </select>
+                        <div class="picker">
+                            <div class="picker-search-row">
+                                <input
+                                    id="histDistrictSearch"
+                                    class="picker-search"
+                                    type="text"
+                                    placeholder="Search districts..."
+                                >
+                                <button
+                                    id="histDistrictSearchButton"
+                                    class="picker-search-btn"
+                                    type="button"
+                                >
+                                    Search
+                                </button>
+                            </div>
+
+                            <div
+                                id="histSelectedDistricts"
+                                class="selected-chips"
+                            ></div>
+
+                            <div class="picker-box">
+                                <div
+                                    id="histDistrictOptions"
+                                    class="picker-options"
+                                ></div>
+
+                                <div class="picker-footer">
+                                    <span
+                                        id="histDistrictCount"
+                                        class="picker-count"
+                                    >
+                                        No districts selected
+                                    </span>
+
+                                    <button
+                                        id="histClearDistricts"
+                                        class="picker-clear"
+                                        type="button"
+                                    >
+                                        Clear
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Filter 5: Branch / Course (Optional) -->
                     <div class="form-group">
-                        <label for="histBranch">
+                        <label>
                             5. Branch / Course
                             <span class="optional-label">Optional</span>
                         </label>
-                        <select id="histBranch">
-                            <option value="">All Branches (116)</option>
-                        </select>
+                        <div class="picker">
+                            <div class="picker-search-row">
+                                <input
+                                    id="histBranchSearch"
+                                    class="picker-search"
+                                    type="text"
+                                    placeholder="Search branches / courses..."
+                                >
+                                <button
+                                    id="histBranchSearchButton"
+                                    class="picker-search-btn"
+                                    type="button"
+                                >
+                                    Search
+                                </button>
+                            </div>
+
+                            <div
+                                id="histSelectedBranches"
+                                class="selected-chips"
+                            ></div>
+
+                            <div class="picker-box">
+                                <div
+                                    id="histBranchOptions"
+                                    class="picker-options"
+                                ></div>
+
+                                <div class="picker-footer">
+                                    <span
+                                        id="histBranchCount"
+                                        class="picker-count"
+                                    >
+                                        No branches selected
+                                    </span>
+
+                                    <button
+                                        id="histClearBranches"
+                                        class="picker-clear"
+                                        type="button"
+                                    >
+                                        Clear
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Filter 6: Specific College (Optional) -->
                     <div class="form-group">
-                        <label for="histCollege">
+                        <label>
                             6. Specific College
                             <span class="optional-label">Optional</span>
                         </label>
-                        <select id="histCollege">
-                            <option value="">All Colleges (467)</option>
-                        </select>
+                        <div class="college-search-box" id="histCollegeSearchBox">
+                            <div class="picker-search-row">
+                                <input
+                                    id="histCollegeSearch"
+                                    class="picker-search"
+                                    type="text"
+                                    placeholder="Search college by name or code..."
+                                    autocomplete="off"
+                                >
+                                <button
+                                    id="histCollegeSearchButton"
+                                    class="picker-search-btn"
+                                    type="button"
+                                >
+                                    Search
+                                </button>
+                            </div>
+
+                            <div
+                                id="histCollegeSuggestions"
+                                class="college-suggestions hidden"
+                            ></div>
+
+                            <div
+                                id="histCollegeSelectedDisplay"
+                                class="college-selected-display hidden"
+                            ></div>
+                        </div>
                     </div>
 
                 </div>

@@ -6,9 +6,9 @@ This document describes the implementation currently in the repository. It repla
 
 The single-page application has three navigation menus: **Predictor**, **Choice Optimizer**, and **TNEA Historical Records**.
 
-- **Predictor:** users choose Aggregate Cutoff Mark or TNEA State Rank, enter the corresponding value, and filter recommendations using the currently available community, location, branch, college, and tier controls. There is no Predictor quota-category selector.
+- **Predictor:** users choose Aggregate Cutoff Mark or TNEA State Rank, enter the corresponding value, and filter recommendations by community, multiple districts, multiple branches, and an optional specific college. There is no Predictor quota-category selector or institutional-tier filter.
 - **Choice Optimizer:** submits candidate choices to the optimizer, presents the ordered list and risk mix, supports formatted copy, and exports CSV (browser-side) and PDF (backend).
-- **TNEA Historical Records:** searches cutoff or closing-rank values for selected 2021–2025 years and communities; optional district, branch, and college filters are available. The response and table are grouped by Year → Community and paginated.
+- **TNEA Historical Records:** searches cutoff or closing-rank values for selected 2021–2025 years and communities; searchable multi-select district and branch filters and an optional specific-college filter are available. The response and table are grouped by Year → Community and paginated.
 - **Predictor result actions:** show a five-year trend and same-campus branch alternatives.
 - **Theme:** dark and light modes are available; the selection is persisted in local storage and applied early to avoid a visible theme flash.
 

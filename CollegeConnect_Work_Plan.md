@@ -6,8 +6,8 @@ This checklist describes the current implementation rather than the superseded p
 
 - [x] Three-menu single-page interface: Predictor, Choice Optimizer, and TNEA Historical Records.
 - [x] Predictor supports Aggregate Cutoff Mark and TNEA State Rank methods.
-- [x] Predictor UI has no quota-category selector.
-- [x] Historical explorer supports year and community selection, cutoff/rank metrics, location/branch/college filtering, pagination, and Year → Community grouped results.
+- [x] Predictor filters by community, multiple districts and branches, and optional specific college; it has no quota-category or institutional-tier selector.
+- [x] Historical explorer supports year/community selection, cutoff/rank metrics, searchable multi-select district/branch filters, optional specific college, pagination, and Year → Community grouped results.
 - [x] Choice Optimizer supports balanced choice ordering, formatted copy, CSV export, and PDF export.
 - [x] Predictor results include a five-year trend and same-campus branch alternatives.
 - [x] Dark/light themes persist across visits.

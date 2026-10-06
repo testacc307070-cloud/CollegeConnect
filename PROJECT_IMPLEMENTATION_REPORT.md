@@ -7,9 +7,9 @@
 
 CollegeConnect is a single-page TNEA admissions research tool backed by Flask and MySQL. Its three navigation areas are:
 
-1. **Predictor** — Aggregate Cutoff Mark or TNEA State Rank assessment. There is no quota-category selector in this screen.
+1. **Predictor** — Aggregate Cutoff Mark or TNEA State Rank assessment, filterable by community, multiple districts, multiple branches, and an optional specific college. The screen has no quota-category selector or institutional-tier filter.
 2. **Choice Optimizer** — organizes submitted choices into Reach/Target/Safe groups and offers formatted copy, CSV, and PDF outputs.
-3. **TNEA Historical Records** — selected years, communities, cutoff/rank metric, and optional district/branch/college filters; grouped Year → Community with pagination.
+3. **TNEA Historical Records** — selected years, communities, cutoff/rank metric, searchable multi-select district/branch filters, and an optional specific-college filter; grouped Year → Community with pagination.
 
 Predictor results also expose a 2021–2025 trend view and same-campus branch alternatives. A persistent light/dark theme is implemented. The optional Gemini integration has a deterministic fallback.
 
@@ -25,6 +25,7 @@ The following checks were run locally on October 6, 2026:
 | `python scripts/verify_theme_system.py` | Passed. Light/dark tokens, selectors, controller persistence, and trend-chart theme behavior were checked. |
 | `python scripts/test_scoring.py` | Passed. Scoring test completed successfully. |
 | `python scripts/test_modal_and_exports.py` | Passed with Flask running. Five-year trend, campus branch alternatives, optimizer, PDF response, and CSV structure were checked. |
+| Historical-records multi-filter request | Passed with repeated district and branch parameters; returned records matched selected filters. |
 
 The modal/export script makes HTTP requests to the local app and therefore must be run while `backend/app.py` is serving on port 5000. The end-to-end verification suite also requires a running, loaded MySQL database. Its API checks include the retained quota-advisory response path; that path does not add a quota-category selector to the Predictor UI. These are local verification results, not a claim of production deployment or admission accuracy.
 

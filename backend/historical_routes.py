@@ -89,11 +89,22 @@ def get_historical_records():
             # Keep consistent standard order
             parsed_comms.sort(key=lambda c: ALL_VALID_COMMUNITIES.index(c))
 
-        # 4. Optional single filters
-        district = request.args.get("district", "").strip() or None
-        branch_code = request.args.get("branch_code", "").strip() or None
-        if not branch_code:
-            branch_code = request.args.get("branch", "").strip() or None
+        # 4. Optional filters (District, Branch, College)
+        raw_districts = request.args.getlist("district")
+        if not raw_districts and "districts" in request.args:
+            raw_districts = request.args.getlist("districts")
+        if not raw_districts and "district" in request.args:
+            raw_districts = [request.args.get("district")]
+        parsed_districts = [d.strip() for d in raw_districts if d and d.strip()]
+
+        raw_branches = request.args.getlist("branch_code")
+        if not raw_branches and "branches" in request.args:
+            raw_branches = request.args.getlist("branches")
+        if not raw_branches and "branch_code" in request.args:
+            raw_branches = [request.args.get("branch_code")]
+        if not raw_branches and "branch" in request.args:
+            raw_branches = [request.args.get("branch")]
+        parsed_branches = [b.strip() for b in raw_branches if b and b.strip()]
 
         college_code_raw = request.args.get("college_code", "").strip()
         college_code = int(college_code_raw) if college_code_raw.isdigit() else None
@@ -128,13 +139,21 @@ def get_historical_records():
             )
             base_params.extend(parsed_comms)
 
-            if district:
-                where_conditions.append("c.district = %s")
-                base_params.append(district)
+            if parsed_districts:
+                if len(parsed_districts) == 1:
+                    where_conditions.append("c.district = %s")
+                    base_params.append(parsed_districts[0])
+                else:
+                    where_conditions.append("c.district IN (" + ",".join(["%s"] * len(parsed_districts)) + ")")
+                    base_params.extend(parsed_districts)
 
-            if branch_code:
-                where_conditions.append("h.branch_code = %s")
-                base_params.append(branch_code)
+            if parsed_branches:
+                if len(parsed_branches) == 1:
+                    where_conditions.append("h.branch_code = %s")
+                    base_params.append(parsed_branches[0])
+                else:
+                    where_conditions.append("h.branch_code IN (" + ",".join(["%s"] * len(parsed_branches)) + ")")
+                    base_params.extend(parsed_branches)
 
             if college_code:
                 where_conditions.append("h.college_code = %s")

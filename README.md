@@ -6,9 +6,9 @@ CollegeConnect is a Flask and MySQL web application for exploring Tamil Nadu Eng
 
 The navigation has three menus:
 
-1. **Predictor** — choose Aggregate Cutoff Mark or TNEA State Rank, then filter results by community and college attributes. The Predictor does **not** have a selectable quota-category field.
+1. **Predictor** — choose Aggregate Cutoff Mark or TNEA State Rank, then filter by community, multiple districts, multiple branches, and an optional specific college. There is no Predictor quota-category field or institutional-tier filter.
 2. **Choice Optimizer** — build and balance a DoTE choice list, review the Reach/Target/Safe distribution, copy the formatted list, or export it as CSV or PDF.
-3. **TNEA Historical Records** — query historical cutoff marks or closing ranks for selected years and communities, with optional district, branch, and college filters. Results are grouped by **Year → Community** and paginated.
+3. **TNEA Historical Records** — query historical cutoff marks or closing ranks for selected years and communities, with searchable multi-select district and branch filters and an optional specific college. Results are grouped by **Year → Community** and paginated.
 
 Additional Predictor result actions show a 2021–2025 trend chart and alternative branches at the same campus. The light/dark theme toggle saves the preference in browser local storage.
 
@@ -23,7 +23,7 @@ Additional Predictor result actions show a 2021–2025 trend chart and alternati
 | Analysis | Deterministic scoring, cutoff/rank history, five-year trend data, campus branch alternatives, and college-tier classification. |
 | Explanations | Google Gemini integration is optional; deterministic explanations are available when no Gemini API key is configured. |
 
-The current dataset contains 467 colleges, 116 branches, and the seven communities OC, BC, BCM, MBC, SC, SCA, and ST. Historical records use the General quota baseline represented in the source data. While the Predictor form has no quota-category selector, the backend retains a quota-advisory response path covered by the system verifier; this does not represent a separate quota dataset.
+The current dataset contains 467 colleges, 116 branches, and the seven communities OC, BC, BCM, MBC, SC, SCA, and ST. Historical records use the General quota baseline represented in the source data. The backend retains a quota-advisory response path covered by the system verifier; this does not represent a separate quota dataset or a Predictor quota selector.
 
 ## Requirements
 
@@ -93,14 +93,14 @@ The Flask service exposes JSON APIs including:
 | `/api/districts`, `/api/branches`, `/api/tiers`, `/api/colleges` | GET | Populate filters and search colleges. |
 | `/api/predictions` | GET | Aggregate-cutoff prediction results. |
 | `/api/rank-predictions` | GET | State-rank prediction results. |
-| `/api/historical-records` | GET | Year/community-grouped historical cutoff or rank records, with filters and pagination. |
+| `/api/historical-records` | GET | Year/community-grouped historical cutoff or rank records; supports repeated `year`, `community`, `district`, and `branch_code` parameters, optional `college_code`, and pagination. |
 | `/api/historical`, `/api/historical-analysis` | GET | Historical outcome and trend data used by Predictor results. |
 | `/api/branch-swap` | GET | Alternative branches at the selected campus. |
 | `/api/choices/optimize` | GET/POST | Optimize a submitted choice list. |
 | `/api/choices/export-pdf` | POST | Generate a PDF choice-list export. |
 | `/api/rag-explanation`, `/api/rank-rag-explanation` | GET/POST | Cutoff- and rank-based explanations. |
 
-Choice-list CSV export is generated in the browser; PDF export is handled by the backend. A legacy `GET /api/rank-matrix` endpoint remains registered and is covered by the backend verifier, but there is no Rank Matrix menu or page in the current interface.
+Choice-list CSV export is generated in the browser; PDF export is handled by the backend. Additional registered compatibility endpoints include `/api/predict`, `/api/combined-predictions`, and `/api/combined-rag-explanation`. A legacy `GET /api/rank-matrix` endpoint remains registered and is covered by the backend verifier, but there is no Rank Matrix menu or page in the current interface.
 
 ## Repository map
 

@@ -227,9 +227,10 @@ def verify_frontend_assets(reporter: TestReporter):
     has_branch_swap_modal = "branchSwapModal" in content
     has_calc_widget = "calc-widget" in content
     has_method_toggle = "predictionMethod" in content
-    has_tier_select = "tierFilter" in content
+    tier_removed = "tierFilter" not in content
     has_historical_tab = "historicalTab" in content
-    reporter.check("Index.html Modal & Widget Markup", r.status_code == 200 and all([has_trend_modal, has_branch_swap_modal, has_calc_widget, has_method_toggle, has_tier_select, has_historical_tab]), "(All UI widgets & tabs present)")
+    has_hist_search_filters = "histDistrictSearch" in content and "histBranchSearch" in content and "histCollegeSearch" in content
+    reporter.check("Index.html Modal & Widget Markup", r.status_code == 200 and all([has_trend_modal, has_branch_swap_modal, has_calc_widget, has_method_toggle, tier_removed, has_historical_tab, has_hist_search_filters]), "(All UI widgets, tabs & searchable filters present; tierFilter removed)")
 
     # Stylesheet
     r = client.get("/assets/styles.css")

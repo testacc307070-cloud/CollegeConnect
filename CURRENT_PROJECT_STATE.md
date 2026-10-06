@@ -6,9 +6,9 @@
 
 The current frontend has three menus:
 
-- **Predictor:** switches between Aggregate Cutoff Mark and TNEA State Rank and filters results. No Predictor quota-category field is shown.
+- **Predictor:** switches between Aggregate Cutoff Mark and TNEA State Rank; filters by community, multiple districts, multiple branches, and an optional specific college. No Predictor quota-category field or institutional-tier filter is shown.
 - **Choice Optimizer:** balances submitted options into Reach/Target/Safe choices; supports copy, CSV, and PDF.
-- **TNEA Historical Records:** browses 2021–2025 cutoff marks or closing ranks. Multiple years and communities can be selected; results are displayed in a Year → Community grouped table with pagination and optional district, branch, and college filters.
+- **TNEA Historical Records:** browses 2021–2025 cutoff marks or closing ranks. Multiple years, communities, districts, and branches can be selected; results are displayed in a Year → Community grouped table with pagination and an optional specific-college filter.
 
 The Predictor additionally provides a five-year trend and Campus Branches alternatives. Dark and light themes are available and the chosen mode persists in local storage.
 
