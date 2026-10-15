@@ -2,8 +2,25 @@
 .env
 .env.*
 !.env.example
+
+# Private certificates and keys
 *.pem
 *.key
+*.crt
+*.cer
+*.ca
+*.pfx
+*.p12
+certs/
+certificates/
+
+# Database dumps and backups
+*.dump
+*.sql.gz
+*.sql
+!database/schema.sql
+dumps/
+backups/
 
 # Python
 __pycache__/

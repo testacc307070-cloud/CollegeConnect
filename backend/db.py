@@ -9,6 +9,7 @@ import subprocess
 import time
 import pymysql
 from dotenv import load_dotenv
+from backend.mysql_tls import mysql_tls_options
 
 logger = logging.getLogger("collegeconnect.db")
 
@@ -100,6 +101,7 @@ def get_db_connection():
     database = os.getenv("MYSQL_DATABASE", "collegeconnect")
     user = os.getenv("MYSQL_USER", "root")
     password = os.getenv("MYSQL_PASSWORD", "")
+    tls_options = mysql_tls_options(host, os.getenv("MYSQL_SSL_CA"))
 
     def _connect():
         return pymysql.connect(
@@ -108,7 +110,8 @@ def get_db_connection():
             user=user,
             password=password,
             database=database,
-            charset="utf8mb4"
+            charset="utf8mb4",
+            **tls_options
         )
 
     try:

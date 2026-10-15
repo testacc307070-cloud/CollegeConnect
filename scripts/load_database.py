@@ -6,7 +6,7 @@ Authoritative ETL Script: Ingests 5-Year Integrated TNEA Master Dataset into MyS
 Requirements & Specifications:
 1. Reads the integrated master CSV: data/integrated/tnea_integrated_master.csv
 2. Validates all required source columns before starting ingestion.
-3. Connects to MySQL using environment variables (MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD).
+3. Connects to MySQL using environment variables (MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD, MYSQL_SSL_CA).
 4. Populates master dimension table: `colleges` (467 unique institutions).
    - Ingestion Normalization Decision: Source records across academic years contain naming variations
      for 443 institutions (minor spelling, punctuation, or historical renaming in TNEA publications).
@@ -108,6 +108,10 @@ REQUIRED_COLUMNS = [
 ]
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from backend.mysql_tls import mysql_tls_options
 
 
 # ------------------------------------------------------------------------------
@@ -168,6 +172,7 @@ def get_db_config() -> Dict[str, Any]:
     database = os.getenv("MYSQL_DATABASE", "collegeconnect").strip()
     user = os.getenv("MYSQL_USER", "root").strip()
     password = os.getenv("MYSQL_PASSWORD", "")
+    ssl_ca = os.getenv("MYSQL_SSL_CA", "").strip()
 
     return {
         "host": host,
@@ -175,6 +180,7 @@ def get_db_config() -> Dict[str, Any]:
         "database": database,
         "user": user,
         "password": password,
+        "ssl_ca": ssl_ca,
     }
 
 
@@ -184,6 +190,7 @@ def get_db_connection(config: Dict[str, Any]):
     Enforces autocommit=False to maintain explicit transactional integrity.
     """
     driver_errors = []
+    tls_options = mysql_tls_options(config["host"], config.get("ssl_ca"))
 
     # 1. Try pymysql
     try:
@@ -195,7 +202,8 @@ def get_db_connection(config: Dict[str, Any]):
             password=config["password"],
             database=config["database"],
             charset="utf8mb4",
-            autocommit=False
+            autocommit=False,
+            **tls_options
         )
         logger.info("Connected to MySQL using 'pymysql' driver.")
         return conn
@@ -214,7 +222,8 @@ def get_db_connection(config: Dict[str, Any]):
             password=config["password"],
             database=config["database"],
             charset="utf8mb4",
-            autocommit=False
+            autocommit=False,
+            **tls_options
         )
         logger.info("Connected to MySQL using 'mysql-connector-python' driver.")
         return conn
